@@ -69,9 +69,9 @@ var mtfSTGMaker = (function() {
         // 绘制前调用
         this.constructor.beforeDraw && this.constructor.beforeDraw.call(this)
         if (this.constructor.icons && this.status > -1 && this.constructor.icons[this.status]) {
-            CTX.drawImage(this.constructor.icons[this.status], this.x, this.y, this.width, this.height)
+            context.drawImage(this.constructor.icons[this.status], this.x, this.y, this.width, this.height)
         } else {
-            CTX.fillRect(this.x, this.y, this.width, this.height)
+            context.fillRect(this.x, this.y, this.width, this.height)
         }
     }
     /**
@@ -128,7 +128,7 @@ var mtfSTGMaker = (function() {
      * 静态方法：绘制前，子弹向上移动
      */
     PlaneBullet.beforeDraw = function() {
-        if (this.y > CONF.canvasBoundary.minY) {
+        if (this.y > canvas.height - CONF.canvasPadding) {
             this.move(0, -this.speed)
         } else {
             this.status = -1
@@ -139,10 +139,10 @@ var mtfSTGMaker = (function() {
      * 方法：绘制飞机子弹
      */
     PlaneBullet.prototype.draw = function() {
-        CTX.moveTo(this.x, this.y)
-        CTX.lineTo(this.x, this.y - this.height)
-        CTX.strokeStyle = '#fff'
-        CTX.stroke()
+        context.moveTo(this.x, this.y)
+        context.lineTo(this.x, this.y - this.height)
+        context.strokeStyle = '#fff'
+        context.stroke()
     }
     /**
      * 原型：敌人
@@ -160,30 +160,34 @@ var mtfSTGMaker = (function() {
      * 静态方法：绘制前，敌人水平往复，遇边界下移
      */
     Enemy.beforeDraw = function() {
-        if (this.x < CONF.canvasBoundary.minX || this.x > CONF.canvasBoundary.maxX - this.size) {
-            Enemy.enemyDirection = Enemy.enemyDirection === 'right' ? 'left' : 'right'
+        if (this.enemyDirection !== Enemy.enemyDirection) {
             this.move(0, this.speed)
+            this.enemyDirection = Enemy.enemyDirection
         }
-        this.move(Enemy.enemyDirection === 'right' ? this.speed : -this.speed, 0)
+        this.move(Enemy.enemyDirection === 'right' ? this.speed : -this.speed , 0)
+        if (!Enemy.enemyDirectionLock) {
+            if (this.x <= CONF.canvasPadding || this.x >= canvas.width - CONF.canvasPadding - this.width) {
+                Enemy.enemyDirectionLock = true
+                // 帧任务队列：下一帧更新敌人移动方向
+                FrameQueue.push(function() {
+                    Enemy.enemyDirectionLock = false
+                    Enemy.enemyDirection = Enemy.enemyDirection === 'right' ? 'left' : 'right'
+                })
+            }
+        }
     }
     inherit(Enemy, MovableObject)
 
     // 全局配置
     var CONF = {
         status: 'start', // 游戏开始默认为开始中
-        level: 1, // 游戏默认等级
+        level: 10, // 游戏默认等级
         totalLevel: 6, // 总共6关
-        numPerLine: 6, // 游戏默认每行多少个怪兽
-        canvasPadding: 30, // 默认画布的间隔
-        canvasBoundary: {
-            minX: 0,
-            maxX: 500,
-            minY: 0,
-            maxY: 500
-        },
+        numPerLine: 10, // 游戏默认每行多少个怪兽
+        canvasPadding: 30, // 默认画布的内边距
         bulletSize: 10, // 默认子弹长度
         bulletSpeed: 10, // 默认子弹的移动速度
-        enemySpeed: 2, // 默认敌人移动距离
+        enemySpeed: 5, // 默认敌人移动距离
         enemySize: 50, // 默认敌人的尺寸
         enemyGap: 10,  // 默认敌人之间的间距
         enemyIcon: './img/enemy.png', // 怪兽的图像
@@ -195,15 +199,19 @@ var mtfSTGMaker = (function() {
           height: 100
         }, // 默认飞机的尺寸,
         planeIcon: './img/plane.png',
-    }, CTX
+    }, canvas, context
+    /**
+     * 帧任务队列：每一帧时执行队列中的任务，并清空队列
+     */
+    var FrameQueue = []
     /**
      * 运行
      */
     var run = function() {
         var enemies = [], gap = CONF.enemySize + CONF.enemyGap,
         plane = new Plane({ // 飞机
-            x: CONF.canvasBoundary.maxX - CONF.planeSize.width >>> 1,
-            y: CONF.canvasBoundary.maxY - CONF.planeSize.height,
+            x: canvas.width - CONF.planeSize.width >> 1,
+            y: canvas.height - CONF.canvasPadding - CONF.planeSize.height,
             width: CONF.planeSize.width,
             height: CONF.planeSize.height,
             speed: CONF.planeSpeed
@@ -211,8 +219,8 @@ var mtfSTGMaker = (function() {
         for (var i = 0; i < CONF.level; i++) { // 敌人
             for (var j = 0, levelGap = gap * i; j < CONF.numPerLine; j++) {
                 enemies.push(new Enemy({
-                    x: gap * j,
-                    y: levelGap,
+                    x: CONF.canvasPadding + gap * j,
+                    y: CONF.canvasPadding + levelGap,
                     width: CONF.enemySize,
                     height: CONF.enemySize,
                     speed: CONF.enemySpeed
@@ -221,7 +229,13 @@ var mtfSTGMaker = (function() {
         }
          // 渲染
         function draw () {
-            CTX.clearRect(CONF.canvasBoundary.minX, CONF.canvasBoundary.minY, CONF.canvasBoundary.maxX, CONF.canvasBoundary.maxY);
+            // 执行并清空任务 帧任务队列
+            FrameQueue.forEach(function(cb) {
+                cb()
+            })
+            FrameQueue.length = 0
+            // 清空画布
+            context.clearRect(CONF.canvasPadding, CONF.canvasPadding, canvas.width - CONF.canvasPadding, canvas.height - CONF.canvasPadding)
             enemies.forEach(function(enemy) {
                 enemy.draw()
             })
@@ -238,11 +252,12 @@ var mtfSTGMaker = (function() {
     /**
      * 初始化
      */
-    var init = function(context, conf) {
+    var init = function(_canvas, conf) {
         conf && Object.assign(CONF, conf)
         // 静态属性：敌人移动方向
         Enemy.enemyDirection = CONF.enemyDirection
-        CTX = context
+        canvas = _canvas
+        context = canvas.getContext('2d')
         run()
     }
     return {
