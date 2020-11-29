@@ -100,7 +100,6 @@ var mtfSTGMaker = (function() {
     inherit(ShootingObject, MovableObject)
     ShootingObject.prototype.shoot = function() {
         if (this.bullet) {
-            
             this.bullet.opt = this.bullet.opt || Object.create(null)
             if (this.bullet.opt.setX) {
                 this.bullet.opt.x = this.bullet.opt.setX(this)
@@ -220,6 +219,7 @@ var mtfSTGMaker = (function() {
         canvasPadding: 30, // 默认画布的内边距
         bulletSize: 10, // 默认子弹长度
         bulletSpeed: 10, // 默认子弹的移动速度
+        bulletCoolownTime: 100, // 默认子弹的冷却时间（秒）
         enemySpeed: 2, // 默认敌人移动距离
         enemySize: 50, // 默认敌人的尺寸
         enemyGap: 10,  // 默认敌人之间的间距
@@ -348,8 +348,8 @@ var mtfSTGMaker = (function() {
                 for (var campId = 0; campId < opt.camps.length; campId++) {
                     var points = opt.camps[campId]
                     for(var pointId = 0; pointId < points.length; pointId++) {
-                        pointsX.push([points[pointId].x, 1, campId, pointId], 
-                                     [points[pointId].x + points[pointId].width, 0, campId, pointId])
+                        pointsX.push([points[pointId].x, true, campId, pointId], 
+                                     [points[pointId].x + points[pointId].width, false, campId, pointId])
                     }
                 }
                 // 通过AABB算法粗检测，筛选出X轴投影碰撞的实例。再在Y轴碰撞检测
@@ -361,6 +361,29 @@ var mtfSTGMaker = (function() {
                 })
             }
             opt.cb && opt.cb(res)
+        },
+        /**
+         * 节流及防抖
+         * @param {Function}} fn 函数 
+         * @param {Integer} delay 延迟时间（秒） 节流：延迟时间即执行时间间隔 防抖：重复执行将重置延迟时间
+         * @param {Boolean} isDebounce 是否开启防抖，默认为节流
+         * @return {Function} 返回函数
+         */
+        throttle: function(fn, delay, isDebounce) {
+            var timer = null
+            return function() {
+                var _this = this, args = arguments
+                if (isDebounce && timer) {
+                    clearTimeout(timer)
+                    timer = null
+                }
+                if (timer === null) {
+                    timer = setTimeout(function() {
+                        timer = null
+                        fn.apply(_this, args)
+                    }, delay)
+                }
+            }
         }
     }
 
@@ -410,8 +433,10 @@ var mtfSTGMaker = (function() {
                 }))
             }
         }
+        // 装饰冷却时间参数的飞机射击
+        var planeShoot = Utils.throttle(plane.shoot, CONF.bulletCoolownTime, false).bind(plane)
          // 渲染
-        (function draw () {
+        ;(function draw () {
             // 执行并清空任务 帧任务队列
             FrameQueue.forEach(function(cb) {
                 cb()
@@ -467,7 +492,7 @@ var mtfSTGMaker = (function() {
                             offsetX = -plane.speed
                         break;
                         case 'shoot':
-                            plane.shoot()
+                            planeShoot()
                         break;
                     }
                 }
