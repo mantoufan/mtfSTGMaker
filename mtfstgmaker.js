@@ -214,9 +214,9 @@ var mtfSTGMaker = (function() {
     // 全局配置
     var CONF = {
         status: 'start', // 游戏开始默认为开始中
-        level: 1, // 游戏默认等级
+        level: 3, // 游戏默认等级
         totalLevel: 6, // 总共6关
-        numPerLine: 1, // 游戏默认每行多少个怪兽
+        numPerLine: 9, // 游戏默认每行多少个怪兽
         canvasPadding: 30, // 默认画布的内边距
         bulletSize: 10, // 默认子弹长度
         bulletSpeed: 10, // 默认子弹的移动速度
@@ -286,55 +286,73 @@ var mtfSTGMaker = (function() {
      * 通用方法类
      */
     var Utils = {
+        /**
+         * 判断实例的X坐标是否越界
+         * @param {Integer} x 实例的X坐标
+         * @param {Integer} width 实例的宽度
+         */
         xIsOver: function (x, width) {
             return x <= CONF.canvasPadding || x >= canvas.width - CONF.canvasPadding - width
         },
+        /**
+         * 判断实例的Y坐标是否越界
+         * @param {Integer} y 实例的Y坐标
+         * @param {Integer} height 实例的高度
+         */
         yIsOver: function (y, height) {
             return y <= CONF.canvasPadding || y >= canvas.height - CONF.canvasPadding - height
         },
+        /**
+         * AABB：找出一维投影相交，且阵营不同的实例对
+         * @param {Array[[Integer, Boolean, Integer, Integer]...]} points 二维数组[[坐标投影值, 是否开始（1是，0结束）, 实例的阵营ID，实例ID（自定义）]...]
+         * @param {Function(Integer, Integer, Integer, Integer)} cb 每检测到投影相交的一对实例的回调函数（①实例的阵营ID，①实例ID，②实例的阵营ID，②实例ID）
+         */
         AABB: function (points, cb) {
             var camps = [], campsHash = Object.create(null)
-            points.sort((a, b) => a[0] - b[0])
+            points.sort((a, b) => a[0] - b[0] || b[1] - b[0]) // 按坐标投影值升序。若坐标投影值相同，开始在前
             for (var i = 0; i < points.length; i++) {
-                var v = points[i], type = v[1], campId = v[2], pointId = v[3]
-                if (type === 0) {
+                var v = points[i], isStart = v[1], campId = v[2], pointId = v[3]
+                if (isStart) { // 遇开始，实例 放入 待检测集合
                     if (camps[campId]) {
+                        campsHash[campId + ',' + pointId] = camps[campId].length // 哈希表记忆索引，降低数组删除复杂度
                         camps[campId].push([campId, pointId])
-                        campsHash[campId + ',' + pointId] = camps.length
                     } else {
                         camps[campId] = [[campId, pointId]]
                         campsHash[campId + ',' + pointId] = 0
                     }
-                    for (var j = 0; j < camps.length; j++) {
-                        if (j === campId || camps[j] === void 0) continue
-                        for (var k = 0; k < camps[j].length; k++) {
-                            
+                    for (var j = 0; j < camps.length; j++) { // 遍历 待检测集合
+                        if (j === campId || camps[j] === void 0) continue // 相同阵营 或 阵营无实例 跳过
+                        for (var k = 0; k < camps[j].length; k++) { // 取出 不同阵营 中 实例
+                            if (camps[j][k] === void 0) continue // 跳过 已移除 实例
                             var _v = camps[j][k], _campId = _v[0], _pointId = _v[1]
                                 cb && cb(campId, pointId, _campId, _pointId)
                         }
                     }
-                } else {
-                    camps[campId].splice(campsHash[campId + ',' + pointId], 1)
+                } else { // 遇结束，实例 从 待检测集合 移除
+                    delete camps[campId][campsHash[campId + ',' + pointId]]
                     delete campsHash[campId + ',' + pointId]
                 }
             }
         },
         /**
-         * 
+         * 碰撞检测：找出所有碰撞，且阵营不同的实例对
          * @param {Object} opt 选项
-         * @param {Array[]} opt.camps 阵营列表 [[我方], [敌方]...]
+         * @param {Array[[]...]} opt.camps 阵营列表 [[我方实例集合], [敌方实例集合]...]
+         * @param {Function(Array[[]...])} opt.cb 找到所有碰撞的实例的回调函数([[碰撞的实例对]...])
          */
         collision: function(opt) {
             opt = opt || Object.create(null)
             var res = [], pointsX = []
             if (opt.camps) {
+                // 遍历取出实例在X轴的投影，x坐标，标记起止位置，实例的阵营ID，实例ID
                 for (var campId = 0; campId < opt.camps.length; campId++) {
                     var points = opt.camps[campId]
                     for(var pointId = 0; pointId < points.length; pointId++) {
-                        pointsX.push([points[pointId].x, 0, campId, pointId], 
-                                     [points[pointId].x + points[pointId].width, 1, campId, pointId])
+                        pointsX.push([points[pointId].x, 1, campId, pointId], 
+                                     [points[pointId].x + points[pointId].width, 0, campId, pointId])
                     }
                 }
+                // 通过AABB算法粗检测，筛选出X轴投影碰撞的实例。再在Y轴碰撞检测
                 this.AABB(pointsX, function (campId, pointId, _campId, _pointId) {
                     var point = opt.camps[campId][pointId], _point = opt.camps[_campId][_pointId]
                     if (!(point.y > _point.y + _point.height || point.y + point.height < _point.y)) {
@@ -404,11 +422,10 @@ var mtfSTGMaker = (function() {
             // 碰撞检测
             Utils.collision({
                 camps: [plane.bullets, enemies],
-                cb: function(ar) {
-                    for(var i = 0; i < ar.length; i++) {
-                        console.log(ar[i])
-                        ar[i][0].status = -1
-                        ar[i][1].status = 1
+                cb: function(a) {
+                    for(var i = 0; i < a.length; i++) {
+                        a[i][0].status = -1
+                        a[i][1].status = 1
                     }
                 }
             })
