@@ -215,7 +215,7 @@ var mtfSTGMaker = (function() {
         status: 'start', // 游戏开始默认为开始中
         level: 3, // 游戏默认等级
         totalLevel: 6, // 总共6关
-        numPerLine: 9, // 游戏默认每行多少个怪兽
+        numPerLine: 1, // 游戏默认每行多少个怪兽
         canvasPadding: 30, // 默认画布的内边距
         bulletSize: 10, // 默认子弹长度
         bulletSpeed: 10, // 默认子弹的移动速度
@@ -239,6 +239,10 @@ var mtfSTGMaker = (function() {
             left: 'ArrowLeft',
             shoot: 'Space',
             autoShoot: true // 自动射击（移动端自动开启）
+        },
+        cb: {
+            draw: function() {}, // 渲染时回调
+            collision: function() {} // 碰撞时回调
         }
     }, canvas, context
 
@@ -348,8 +352,10 @@ var mtfSTGMaker = (function() {
                 for (var campId = 0; campId < opt.camps.length; campId++) {
                     var points = opt.camps[campId]
                     for(var pointId = 0; pointId < points.length; pointId++) {
-                        pointsX.push([points[pointId].x, true, campId, pointId], 
-                                     [points[pointId].x + points[pointId].width, false, campId, pointId])
+                        if (points[pointId].status === 0) {
+                            pointsX.push([points[pointId].x, true, campId, pointId], 
+                                        [points[pointId].x + points[pointId].width, false, campId, pointId])
+                        }
                     }
                 }
                 // 通过AABB算法粗检测，筛选出X轴投影碰撞的实例。再在Y轴碰撞检测
@@ -387,14 +393,6 @@ var mtfSTGMaker = (function() {
         }
     }
 
-    /**
-     * 主线程
-     */
-    var MainThread = {
-        init:function () {
-
-        }
-    }
     /**
      * 运行
      */
@@ -444,6 +442,8 @@ var mtfSTGMaker = (function() {
             FrameQueue.length = 0
             // 清空画布
             context.clearRect(CONF.canvasPadding, CONF.canvasPadding, canvas.width - CONF.canvasPadding, canvas.height - CONF.canvasPadding)
+            // 回调函数
+            if (CONF.cb.draw([plane], enemies) === false) return
             // 碰撞检测
             Utils.collision({
                 camps: [plane.bullets, enemies],
@@ -451,6 +451,7 @@ var mtfSTGMaker = (function() {
                     for(var i = 0; i < a.length; i++) {
                         a[i][0].status = -1
                         a[i][1].status = 1
+                        CONF.cb.collision(a[i][0], a[i][1])
                     }
                 }
             })
@@ -476,6 +477,7 @@ var mtfSTGMaker = (function() {
                 }
             }
             var pressed = Control.pressed(), offsetX = 0, offsetY = 0
+            if (CONF.control.autoShoot) pressed['shoot'] = true
             for (var key in pressed) {
                 if (pressed[key]) {
                     switch(key) {
