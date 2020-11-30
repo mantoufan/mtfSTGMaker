@@ -238,56 +238,15 @@ var mtfSTGMaker = (function() {
             down: 'ArrowDown',
             left: 'ArrowLeft',
             shoot: 'Space',
-            autoShoot: true // 自动射击（移动端自动开启）
+            autoShoot: false // 自动射击（移动端自动开启）
         },
         cb: {
             draw: function() {}, // 渲染时回调
             collision: function() {} // 碰撞时回调
         }
     }, canvas, context
-
     /**
-     * 控制对象
-     */
-    var Control = (function(CONF) {
-        var up = false, right = false, down = false, left = false, shoot = false
-        function processKey (e, eventName) {
-            var b = eventName === 'keydown'
-            switch(e.code) {
-                case CONF.control.up:
-                    up = b
-                break;
-                case CONF.control.right:
-                    right = b
-                break;
-                case CONF.control.down:
-                    down = b
-                break;
-                case CONF.control.left:
-                    left = b
-                break;
-                case CONF.control.shoot:
-                    shoot = b
-                break;
-            }
-        }
-        document.addEventListener('keydown', function(e){processKey(e, 'keydown')})
-        document.addEventListener('keyup', function(e){processKey(e, 'keyup')})
-        return {
-            pressed: function() {
-                return {
-                    up: up,
-                    right: right,
-                    down: down,
-                    left: left,
-                    shoot: shoot
-                }
-            }
-        }
-    })(CONF)
-
-    /**
-     * 通用方法类
+     * 通用方法对象
      */
     var Utils = {
         /**
@@ -392,7 +351,68 @@ var mtfSTGMaker = (function() {
             }
         }
     }
-
+    /**
+     * 控制对象
+     */
+    var Control = (function(CONF) {
+        var up = false, right = false, down = false, left = false, shoot = false,
+            prevClientX, prevClientY, touchStepX, touchStepY
+        function processKey (e, eventName) {
+            var b = eventName === 'keydown'
+            switch(e.code) {
+                case CONF.control.up:
+                    up = b
+                break;
+                case CONF.control.right:
+                    right = b
+                break;
+                case CONF.control.down:
+                    down = b
+                break;
+                case CONF.control.left:
+                    left = b
+                break;
+                case CONF.control.shoot:
+                    shoot = b
+                break;
+            }
+        }
+        function touch(e, eventName) {
+            up = false, right = false, down = false, left = false
+            if(eventName === 'touchend') {
+                prevClientX = prevClientY = touchStepX = touchStepY = void 0
+                return
+            }
+            var t = e.changedTouches[0]
+            if (prevClientX && prevClientY) {
+                touchStepX = t.clientX - prevClientX,
+                touchStepY = t.clientY - prevClientY,
+                d  = 1
+                touchStepX > d ? right = true : touchStepX < -d && (left = true)
+                touchStepY > d ? down = true  : touchStepY < -d && (up = true)
+            }
+            prevClientX = t.clientX
+            prevClientY = t.clientY
+        }
+        
+        document.addEventListener('keydown', function(e){processKey(e, 'keydown')})
+        document.addEventListener('keyup', function(e){processKey(e, 'keyup')})
+        document.addEventListener('touchmove', Utils.throttle(function(e){touch(e, 'touchmove')}, 36))
+        document.addEventListener('touchend', function(e){touch(e, 'touchend')})
+        return {
+            pressed: function() {
+                return {
+                    up: up,
+                    right: right,
+                    down: down,
+                    left: left,
+                    shoot: shoot,
+                    touchStepX: touchStepX,
+                    touchStepY: touchStepY
+                }
+            }
+        }
+    })(CONF)
     /**
      * 运行
      */
@@ -476,22 +496,23 @@ var mtfSTGMaker = (function() {
                     plane.bullets[i].draw()
                 }
             }
-            var pressed = Control.pressed(), offsetX = 0, offsetY = 0
+            var pressed = Control.pressed(), touchStepX = pressed.touchStepX, touchStepY = pressed.touchStepY,
+                offsetX = 0, offsetY = 0
             if (CONF.control.autoShoot) pressed['shoot'] = true
             for (var key in pressed) {
                 if (pressed[key]) {
                     switch(key) {
                         case 'up':
-                            offsetY = -plane.speed
+                            offsetY = touchStepY ? touchStepY : -plane.speed
                         break;
                         case 'right':
-                            offsetX = plane.speed
+                            offsetX = touchStepX ? touchStepX : plane.speed
                         break;
                         case 'down':
-                            offsetY = plane.speed
+                            offsetY = touchStepY ? touchStepY : plane.speed
                         break;
                         case 'left':
-                            offsetX = -plane.speed
+                            offsetX = touchStepX ? touchStepX : -plane.speed
                         break;
                         case 'shoot':
                             planeShoot()
