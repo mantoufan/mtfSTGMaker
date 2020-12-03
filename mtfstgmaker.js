@@ -44,11 +44,11 @@ var mtfSTGMaker = (function() {
         if (!this.constructor.icons && this.constructor.iconSrcs) {
             var _this = this
             this.constructor.icons = []
-            this.constructor.iconSrcs.forEach(function(src) {
+            this.constructor.iconSrcs.forEach(function(src, index) {
                 var icon = new Image()
                 icon.src = src
                 icon.onload = function() {
-                    _this.constructor.icons.push(icon)
+                    _this.constructor.icons[index] = icon
                 }
             })
         }
@@ -132,7 +132,7 @@ var mtfSTGMaker = (function() {
      */
     function Plane(opt) {
         opt = opt || Object.create(null)
-        Plane.iconSrcs = [CONF.planeIcon]
+        Plane.iconSrcs = [CONF.planeIcon, CONF.enemyBoomIcon]
         ShootingObject.call(this, opt)
     }
     inherit(Plane, ShootingObject)
@@ -233,12 +233,12 @@ var mtfSTGMaker = (function() {
         }, // 默认飞机的尺寸,
         planeIcon: './img/plane.png',// 飞机的图像
         control: {// 自定义按键
+            autoShoot: false, // 自动射击（移动端自动开启）
             up: 'ArrowUp',
             right: 'ArrowRight',
             down: 'ArrowDown',
             left: 'ArrowLeft',
             shoot: 'Space',
-            autoShoot: false // 自动射击（移动端自动开启）
         },
         cb: {
             draw: function() {}, // 渲染时回调
@@ -255,6 +255,7 @@ var mtfSTGMaker = (function() {
          * @param {Integer} width 实例的宽度
          */
         xIsOver: function (x, width) {
+            width = width || 0
             return x <= CONF.canvasPadding || x >= canvas.width - CONF.canvasPadding - width
         },
         /**
@@ -263,6 +264,7 @@ var mtfSTGMaker = (function() {
          * @param {Integer} height 实例的高度
          */
         yIsOver: function (y, height) {
+            height = height || 0
             return y <= CONF.canvasPadding || y >= canvas.height - CONF.canvasPadding - height
         },
         /**
@@ -321,7 +323,7 @@ var mtfSTGMaker = (function() {
                 this.AABB(pointsX, function (campId, pointId, _campId, _pointId) {
                     var point = opt.camps[campId][pointId], _point = opt.camps[_campId][_pointId]
                     if (!(point.y > _point.y + _point.height || point.y + point.height < _point.y)) {
-                        res.push([point, _point])
+                        res.push(campId < _campId ? [point, _point] : [_point, point])
                     }
                 })
             }
@@ -352,11 +354,17 @@ var mtfSTGMaker = (function() {
         }
     }
     /**
+     * 资源加载对象
+     */
+    var Loader = (function(CONF) {
+
+    })(CONF)
+    /**
      * 控制对象
      */
     var Control = (function(CONF) {
         var up = false, right = false, down = false, left = false, shoot = false,
-            prevClientX, prevClientY, touchStepX, touchStepY
+            prevClientX, prevClientY
         function processKey (e, eventName) {
             var b = eventName === 'keydown'
             switch(e.code) {
@@ -379,36 +387,54 @@ var mtfSTGMaker = (function() {
         }
         function touch(e, eventName) {
             up = false, right = false, down = false, left = false
-            if(eventName === 'touchend') {
-                prevClientX = prevClientY = touchStepX = touchStepY = void 0
-                return
-            }
+            if(eventName === 'touchend') return prevClientX = prevClientY = void 0
             var t = e.changedTouches[0]
             if (prevClientX && prevClientY) {
-                touchStepX = t.clientX - prevClientX,
-                touchStepY = t.clientY - prevClientY,
-                d  = 1
-                touchStepX > d ? right = true : touchStepX < -d && (left = true)
-                touchStepY > d ? down = true  : touchStepY < -d && (up = true)
+            var dx = t.clientX - prevClientX, dy = t.clientY - prevClientY
+                dx > 0 ? right = true : dx < 0 && (left = true)
+                dy > 0 ? down = true  : dy < 0 && (up = true)
             }
             prevClientX = t.clientX
             prevClientY = t.clientY
         }
-        
+        function arrow (fromX, fromY, toX, toY, color) {
+            if (fromY === toY && fromX === toX) return
+            var arrowLen = 10, arrowAngle = 45, a2r = Math.PI / 180,
+                angle = Math.atan2(fromY - toY, fromX - toX) * 180 / Math.PI,
+                topAngle = (angle + arrowAngle) * a2r,
+                botAngle = (angle - arrowAngle) * a2r,
+                topX = arrowLen * Math.cos(topAngle),
+                topY = arrowLen * Math.sin(topAngle),
+                botX = arrowLen * Math.cos(botAngle),
+                botY = arrowLen * Math.sin(botAngle)
+                context.beginPath()
+                context.moveTo(fromX, fromY)
+                context.lineTo(toX, toY)
+                context.lineTo(toX + topX, toY + topY)
+                context.moveTo(toX, toY)
+                context.lineTo(toX + botX, toY + botY)
+                context.strokeStyle = color
+                context.stroke()
+        } 
         document.addEventListener('keydown', function(e){processKey(e, 'keydown')})
         document.addEventListener('keyup', function(e){processKey(e, 'keyup')})
-        document.addEventListener('touchmove', Utils.throttle(function(e){touch(e, 'touchmove')}, 36))
+        document.addEventListener('touchmove', function(e){touch(e, 'touchmove')})
         document.addEventListener('touchend', function(e){touch(e, 'touchend')})
         return {
+            draw: function() {
+                if (!prevClientX || !prevClientY) return
+                var d = 30, offsetX = left ? -d : right ? d : 0, offsetY = up ? -d : down ? d : 0
+                if (!(Utils.xIsOver(prevClientX + offsetX) || Utils.yIsOver(prevClientY + offsetY))) {
+                    arrow(prevClientX + (offsetX >> 1), prevClientY + (offsetY >> 1), prevClientX + offsetX, prevClientY + offsetY, '#fff')
+                }
+            },
             pressed: function() {
                 return {
                     up: up,
                     right: right,
                     down: down,
                     left: left,
-                    shoot: shoot,
-                    touchStepX: touchStepX,
-                    touchStepY: touchStepY
+                    shoot: shoot
                 }
             }
         }
@@ -417,7 +443,7 @@ var mtfSTGMaker = (function() {
      * 运行
      */
     var run = function () {
-        var enemies = [], gap = CONF.enemySize + CONF.enemyGap,
+        var we = [], enemies = [], gap = CONF.enemySize + CONF.enemyGap,
         plane = new Plane({ // 飞机
             x: canvas.width - CONF.planeSize.width >> 1,
             y: canvas.height - CONF.canvasPadding - CONF.planeSize.height,
@@ -439,6 +465,7 @@ var mtfSTGMaker = (function() {
                 }
             }
         })
+        we.push(plane)
         for (var i = 0; i < CONF.level; i++) { // 敌人
             for (var j = 0, levelGap = gap * i; j < CONF.numPerLine; j++) {
                 enemies.push(new Enemy({
@@ -463,10 +490,21 @@ var mtfSTGMaker = (function() {
             // 清空画布
             context.clearRect(CONF.canvasPadding, CONF.canvasPadding, canvas.width - CONF.canvasPadding, canvas.height - CONF.canvasPadding)
             // 回调函数
-            if (CONF.cb.draw([plane], enemies) === false) return
+            if (CONF.cb.draw(we, enemies) === false) return
             // 碰撞检测
             Utils.collision({
                 camps: [plane.bullets, enemies],
+                cb: function(a) {
+                    for(var i = 0; i < a.length; i++) {
+                        a[i][0].status = -1
+                        a[i][1].status = 1
+                        CONF.cb.collision(a[i][0], a[i][1])
+                    }
+                }
+            })
+            // 碰撞检测：飞机和敌人
+            Utils.collision({
+                camps: [we, enemies],
                 cb: function(a) {
                     for(var i = 0; i < a.length; i++) {
                         a[i][0].status = -1
@@ -496,23 +534,23 @@ var mtfSTGMaker = (function() {
                     plane.bullets[i].draw()
                 }
             }
-            var pressed = Control.pressed(), touchStepX = pressed.touchStepX, touchStepY = pressed.touchStepY,
+            var pressed = Control.pressed(), 
                 offsetX = 0, offsetY = 0
             if (CONF.control.autoShoot) pressed['shoot'] = true
             for (var key in pressed) {
                 if (pressed[key]) {
                     switch(key) {
                         case 'up':
-                            offsetY = touchStepY ? touchStepY : -plane.speed
+                            offsetY = -plane.speed
                         break;
                         case 'right':
-                            offsetX = touchStepX ? touchStepX : plane.speed
+                            offsetX =  plane.speed
                         break;
                         case 'down':
-                            offsetY = touchStepY ? touchStepY : plane.speed
+                            offsetY =  plane.speed
                         break;
                         case 'left':
-                            offsetX = touchStepX ? touchStepX : -plane.speed
+                            offsetX = -plane.speed
                         break;
                         case 'shoot':
                             planeShoot()
@@ -520,11 +558,18 @@ var mtfSTGMaker = (function() {
                     }
                 }
             }
-            if (!(offsetX && Utils.xIsOver(plane.x + offsetX, plane.width) || 
-                  offsetY && Utils.yIsOver(plane.y + offsetY, plane.height))) {
-                plane.move(offsetX, offsetY)
+            Control.draw()
+            for (var i = we.length; i--;) {
+                if (we[i].status === -1) {
+                    we.splice(i, 1)
+                } else {
+                    if (!(offsetX && Utils.xIsOver(we[i].x + offsetX, we[i].width) || 
+                          offsetY && Utils.yIsOver(we[i].y + offsetY, we[i].height))) {
+                          we[i].move(offsetX, offsetY)
+                    }
+                    we[i].draw()
+                }
             }
-            plane.draw()
             ;(window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (f) {
                 window.setTimeout(f, 1000 / 60)
             })(draw)
