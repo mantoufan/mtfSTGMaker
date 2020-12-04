@@ -353,12 +353,46 @@ var mtfSTGMaker = (function() {
             }
         }
     }
+    
     /**
      * 资源加载对象
      */
-    var Loader = (function(CONF) {
-
-    })(CONF)
+    var Loader = (function() {
+        function load(CONF, cb) {
+            var imgList = [], audioList = []
+            for(var i in CONF) {
+                if (/.(png|gif|jpg|webp)$/.test(CONF[i])) {
+                    imgList.push(CONF[i])
+                    
+                } else if (/.(mp3|m4a|wav)$/.test(CONF[i])) {
+                    audioList.push(CONF[i])
+                }
+            }
+            var total = imgList.length + audioList.length, loadedNum = 0
+            if (imgList.length) {
+                for(var i = 0; i < imgList.length; i++) {
+                    var img = new Image()
+                    img.src = imgList[i]  
+                    img.addEventListener('load', function() {
+                        cb && cb(++loadedNum / total * 100)
+                    })
+                }
+            }
+            if (audioList.length) {
+                for(var i = 0; i < audioList.length; i++) {
+                    var audio = new Audio()
+                    audio.src = audioList[i]
+                    audio.load()
+                    audio.addEventListener('canplaythrough', function() {
+                        cb && cb(++loadedNum / total * 100)
+                    })
+                }
+            }
+        }
+        return {
+            load: load
+        }
+    })()
     /**
      * 控制对象
      */
@@ -577,16 +611,28 @@ var mtfSTGMaker = (function() {
     }
     /**
      * 初始化
+     * @param {Object} CONF 配置
      */
     var init = function(_canvas, conf) {
         conf && Object.assign(CONF, conf)
+        
         // 静态属性：敌人移动方向
         Enemy.enemyDirection = CONF.enemyDirection
         canvas = _canvas
         context = canvas.getContext('2d')
         run()
     }
+    /**
+     * 预加载资源
+     * @param {Object} CONF 配置
+     * @param {Function<Integer>} cb 回调函数(加载进度0 - 100)
+     */
+    var preload = function(CONF, cb) {
+        // 读取资源
+        Loader.load(CONF, cb)
+    }
     return {
-        init: init
+        init: init,
+        preload: preload
     }
 })();
