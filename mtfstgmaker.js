@@ -7,7 +7,7 @@
  * 
  * Date: 2020-09-20T18:02Z
  */
-var mtfSTGMaker = (function() {
+var mtfSTGMaker = function(_canvas, conf) {
     /**
      * 函数：子类仅继承父类原型链上的方法，构造函数正确
      * @param {Constructor} subType 
@@ -213,36 +213,89 @@ var mtfSTGMaker = (function() {
     // 全局配置
     var CONF = {
         status: 'start', // 游戏开始默认为开始中
-        level: 3, // 游戏默认等级
-        totalLevel: 6, // 总共6关
-        numPerLine: 1, // 游戏默认每行多少个怪兽
+        level: 6, // 游戏默认等级
+        totalLevel: 8, // 总共2关
+        numPerLine: 4, // 游戏默认每行多少个怪兽
         canvasPadding: 30, // 默认画布的内边距
         bulletSize: 10, // 默认子弹长度
         bulletSpeed: 10, // 默认子弹的移动速度
         bulletCoolownTime: 100, // 默认子弹的冷却时间（秒）
+        bulletNum: 1, // 默认同时射出子弹数量（机枪数量）
+        bulletAudio: 'audio/m4a1.mp3',
         enemySpeed: 2, // 默认敌人移动距离
         enemySize: 50, // 默认敌人的尺寸
         enemyGap: 10,  // 默认敌人之间的间距
         enemyIcon: './img/enemy.png', // 怪兽的图像
         enemyBoomIcon: './img/boom.png', // 怪兽死亡的图像
         enemyDirection: 'right', // 默认敌人一开始往右移动
-        planeSpeed: 5, // 默认飞机每一步移动的距离
+        planeSpeed: 3, // 默认飞机每一步移动的距离
         planeSize: {
             width: 60,
             height: 100
         }, // 默认飞机的尺寸,
         planeIcon: './img/plane.png',// 飞机的图像
+        planeNum: 1,// 飞机数量
         control: {// 自定义按键
-            autoShoot: false, // 自动射击（移动端自动开启）
             up: 'ArrowUp',
             right: 'ArrowRight',
             down: 'ArrowDown',
             left: 'ArrowLeft',
             shoot: 'Space',
+            autoShoot: true, // 自动射击（移动端自动打开）
         },
-        cb: {
-            draw: function() {}, // 渲染时回调
-            collision: function() {} // 碰撞时回调
+        bgAudio: 'audio/bg.mp3',
+        shop: {// 商店
+            items: [
+                {
+                    key: 'control.autoShoot', // 对应的配置键名
+                    name: '自动射击', // 商品名称
+                    value: [true, false], // 对应的配置键值
+                    display: ['开', '关'], // 键值在商店的展示名称
+                    gold: 0 // 切换所需金币
+                },
+                {
+                    key: 'bulletSpeed',
+                    name: '子弹速度',
+                    value: [5, 10, 15, 20, 25],
+                    isUpgrade: true, // 只允许升级，不允许任意选择
+                    gold: 1 // 升级所需金币
+                },
+                {
+                    key: 'bulletCoolownTime',
+                    name: '装弹速度',
+                    value: [100, 90, 80, 70, 60],
+                    isUpgrade: true,
+                    gold: 1
+                },
+                {
+                    key: 'bulletNum',
+                    name: '机枪数量',
+                    value: [1, 2, 3, 4, 5],
+                    isUpgrade: true,
+                    gold: 1
+                },
+                {
+                    key: 'planeSpeed',
+                    name: '飞机速度',
+                    value: [3, 4, 5, 6, 7],
+                    isUpgrade: true,
+                    gold: 1
+                },
+                {
+                    key: 'planeSize',
+                    name: '飞机尺寸',
+                    value: [{width: 60, height: 100}, {width: 30, height: 50}, {width: 15, height: 25}],
+                    display: ['大', '中', '小'],
+                    gold: 1
+                },
+                {
+                    key: 'planeNum',
+                    name: '飞机数量',
+                    value: [1, 2, 3, 4, 5],
+                    isUpgrade: true,
+                    gold: 1
+                }
+            ]
         }
     }, canvas, context
     /**
@@ -353,9 +406,8 @@ var mtfSTGMaker = (function() {
             }
         }
     }
-    
     /**
-     * 资源加载对象
+     * 资源加载实例
      */
     var Loader = (function() {
         function load(CONF, cb) {
@@ -396,7 +448,7 @@ var mtfSTGMaker = (function() {
     /**
      * 控制对象
      */
-    var Control = (function(CONF) {
+    var Control = function(CONF) {
         var up = false, right = false, down = false, left = false, shoot = false,
             prevClientX, prevClientY
         function processKey (e, eventName) {
@@ -472,7 +524,42 @@ var mtfSTGMaker = (function() {
                 }
             }
         }
-    })(CONF)
+    }
+    /**
+     * 商店对象
+     */
+    var Shop = function (CONF) {
+        
+        function list() {
+            var items = CONF.shop.items;
+            for(var i = 0; i < items.length; i++) {
+                var item = items[i], key = item.key, values = item.value
+                item.selIndex = -1
+                if (key) {
+                    var sel = key.split('.').reduce(function(p, key, i, a) {
+                        return p[key] !== void 0 ? p[key] : (a.length = 0, undefined)
+                    }, CONF)
+                    for (var j = 0; j < values.length; j++) {
+                        if (typeof sel === 'object' ? 
+                            JSON.stringify(values[j]) === JSON.stringify(sel) :
+                            values[j] === sel
+                        ) {
+                            item.selIndex = j
+                            break
+                        }
+                    }
+                }
+            }
+            return items
+        }
+        function buy(key, value, cb) {
+
+        }
+        return {
+            list: list,
+            buy: buy
+        }
+    }
     /**
      * 运行
      */
@@ -512,6 +599,8 @@ var mtfSTGMaker = (function() {
                 }))
             }
         }
+        // 控制器对象
+        var control = Control(CONF)
         // 装饰冷却时间参数的飞机射击
         var planeShoot = Utils.throttle(plane.shoot, CONF.bulletCoolownTime, false).bind(plane)
          // 渲染
@@ -568,7 +657,7 @@ var mtfSTGMaker = (function() {
                     plane.bullets[i].draw()
                 }
             }
-            var pressed = Control.pressed(), 
+            var pressed = control.pressed(), 
                 offsetX = 0, offsetY = 0
             if (CONF.control.autoShoot) pressed['shoot'] = true
             for (var key in pressed) {
@@ -592,7 +681,7 @@ var mtfSTGMaker = (function() {
                     }
                 }
             }
-            Control.draw()
+            control.draw()
             for (var i = we.length; i--;) {
                 if (we[i].status === -1) {
                     we.splice(i, 1)
@@ -611,28 +700,19 @@ var mtfSTGMaker = (function() {
     }
     /**
      * 初始化
-     * @param {Object} CONF 配置
      */
-    var init = function(_canvas, conf) {
-        conf && Object.assign(CONF, conf)
-        
-        // 静态属性：敌人移动方向
-        Enemy.enemyDirection = CONF.enemyDirection
-        canvas = _canvas
-        context = canvas.getContext('2d')
-        run()
-    }
-    /**
-     * 预加载资源
-     * @param {Object} CONF 配置
-     * @param {Function<Integer>} cb 回调函数(加载进度0 - 100)
-     */
-    var preload = function(CONF, cb) {
-        // 读取资源
-        Loader.load(CONF, cb)
-    }
+    conf && Object.assign(CONF, conf) 
+    // 静态属性：敌人移动方向
+    Enemy.enemyDirection = CONF.enemyDirection
+    canvas = _canvas
+    context = canvas.getContext('2d')
     return {
-        init: init,
-        preload: preload
+        run: run,
+        preload: function(cb) {
+            Loader.load(CONF, cb)
+        },
+        shop: function() {
+            return Shop(CONF)
+        }
     }
-})();
+};
