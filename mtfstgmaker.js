@@ -245,6 +245,7 @@ var mtfSTGMaker = function(_canvas, conf) {
         },
         bgAudio: 'audio/bg.mp3',
         shop: {// 商店
+            autoSave: true, // 自动保存金币、装备（刷新页面依然有效）
             items: [
                 {
                     key: 'control.autoShoot', // 对应的配置键名
@@ -526,23 +527,62 @@ var mtfSTGMaker = function(_canvas, conf) {
         }
     }
     /**
+     * 记忆实例
+     */
+    var Storage = (function () {
+        var uuid = 'mtfSTGMakerStorage'
+        function _keyStrValue(map, keyStr, value) {
+            return keyStr.split('.').reduce(function(p, key, i, a) {
+                if (p[key] === void 0) a.length = 0
+                if (i === a.length - 1 && value !== -Infinity) {
+                    p[key] = value
+                }
+                return p[key]
+            }, map)
+        }
+        function setKeyStrValue(map, keyStr, value) {
+            return _keyStrValue(map, keyStr, value)
+        }
+        function getKeyStrValue(map, keyStr) {
+            return _keyStrValue(map, keyStr, -Infinity)
+        }
+        function set(keyStr, val) {
+            var mtfSTGMakerStorage = localStorage.getItem(uuid)
+            mtfSTGMakerStorage = JSON.parse(mtfSTGMakerStorage) || Object.create(null)
+            mtfSTGMakerStorage[keyStr] = val
+            return localStorage.setItem(uuid, JSON.stringify(mtfSTGMakerStorage)), val
+        }
+        function get(keyStr) {
+            var mtfSTGMakerStorage = localStorage.getItem(uuid)
+            mtfSTGMakerStorage = JSON.parse(mtfSTGMakerStorage) || Object.create(null)
+            return keyStr ? mtfSTGMakerStorage[keyStr] : mtfSTGMakerStorage
+        }
+        function clear() {
+            return localStorage.removeItem(uuid)
+        }
+        return {
+            setKeyStrValue: setKeyStrValue,
+            getKeyStrValue: getKeyStrValue,
+            set: set,
+            get: get,
+            clear: clear
+        }
+    })()
+    /**
      * 商店对象
      */
     var Shop = function (CONF) {
-        
         function list() {
             var items = CONF.shop.items;
             for(var i = 0; i < items.length; i++) {
-                var item = items[i], key = item.key, values = item.value
+                var item = items[i], keyStr = item.key, values = item.value
                 item.selIndex = -1
-                if (key) {
-                    var sel = key.split('.').reduce(function(p, key, i, a) {
-                        return p[key] !== void 0 ? p[key] : (a.length = 0, undefined)
-                    }, CONF)
+                if (keyStr) {
+                    var selValue = Storage.getKeyStrValue(CONF, keyStr)
                     for (var j = 0; j < values.length; j++) {
-                        if (typeof sel === 'object' ? 
-                            JSON.stringify(values[j]) === JSON.stringify(sel) :
-                            values[j] === sel
+                        if (typeof selValue === 'object' ? 
+                            JSON.stringify(values[j]) === JSON.stringify(selValue) :
+                            values[j] === selValue
                         ) {
                             item.selIndex = j
                             break
@@ -552,12 +592,26 @@ var mtfSTGMaker = function(_canvas, conf) {
             }
             return items
         }
-        function buy(key, value, cb) {
-
+        function buy(itemIndex, valueIndex, cb) {
+            var items    = CONF.shop.items,
+                item     = items[itemIndex],
+                value    = item.value[valueIndex],
+                keyStr   = item.key,
+                autoSave = CONF.shop.autoSave
+                Storage.setKeyStrValue(CONF, keyStr, value)
+                if(autoSave) Storage.set(keyStr, value)
+                cb && cb(item)
+        }
+        function load() {
+            var mtfSTGMakerStorage = Storage.get()
+            for (var keyStr in mtfSTGMakerStorage) {
+                Storage.setKeyStrValue(CONF, keyStr, mtfSTGMakerStorage[keyStr])
+            }
         }
         return {
             list: list,
-            buy: buy
+            buy: buy,
+            load: load
         }
     }
     /**
@@ -713,6 +767,7 @@ var mtfSTGMaker = function(_canvas, conf) {
         },
         shop: function() {
             return Shop(CONF)
-        }
+        },
+        Storage: Storage
     }
 };
