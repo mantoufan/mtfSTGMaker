@@ -99,17 +99,24 @@ var mtfSTGMaker = function(_canvas, conf) {
     }
     inherit(ShootingObject, MovableObject)
     ShootingObject.prototype.shoot = function() {
-        if (this.bullet) {
-            this.bullet.opt = this.bullet.opt || Object.create(null)
-            if (this.bullet.opt.setX) {
-                this.bullet.opt.x = this.bullet.opt.setX(this)
-            }
-            if (this.bullet.opt.setY) {
-                this.bullet.opt.y = this.bullet.opt.setY(this)
-            }
-            this.bullets.push(new this.bullet.constructor(
-                this.bullet.opt
-            ))
+        var self = this
+        if (self.bullet) {
+            self.bullet.forEach(function(bullet, index, ar) {
+                bullet.opt = bullet.opt || Object.create(null)
+                if (bullet.opt.setX) {
+                    bullet.opt.x = bullet.opt.setX(self, index, ar.length)
+                }
+                if (bullet.opt.setY) {
+                    bullet.opt.y = bullet.opt.setY(self, index, ar.length)
+                }
+                self.bullets.push(new bullet.constructor(
+                    bullet.opt
+                ))
+            }) 
+        }
+        if (!isSilence && this.constructor.shootAudioSrc) {
+            var audio = new Audio(this.constructor.shootAudioSrc)
+            audio.play()
         }
     }
     /**
@@ -133,6 +140,7 @@ var mtfSTGMaker = function(_canvas, conf) {
     function Plane(opt) {
         opt = opt || Object.create(null)
         Plane.iconSrcs = [CONF.planeIcon, CONF.enemyBoomIcon]
+        Plane.shootAudioSrc = CONF.planeShootAudio
         ShootingObject.call(this, opt)
     }
     inherit(Plane, ShootingObject)
@@ -192,7 +200,7 @@ var mtfSTGMaker = function(_canvas, conf) {
             this.move(0, this.speed)
             this.enemyDirection = Enemy.enemyDirection
         }
-        this.move(Enemy.enemyDirection === 'right' ? this.speed : -this.speed , 0)
+        this.move(Enemy.enemyDirection === 'right' ? this.speed : -this.speed, 0)
         if (!Enemy.enemyDirectionLock) {
             if (Utils.xIsOver(this.x, this.width)) {
                 Enemy.enemyDirectionLock = true
@@ -220,8 +228,6 @@ var mtfSTGMaker = function(_canvas, conf) {
         bulletSize: 10, // 默认子弹长度
         bulletSpeed: 10, // 默认子弹的移动速度
         bulletCoolownTime: 100, // 默认子弹的冷却时间（秒）
-        bulletNum: 1, // 默认同时射出子弹数量（机枪数量）
-        bulletAudio: 'audio/m4a1.mp3',
         enemySpeed: 2, // 默认敌人移动距离
         enemySize: 50, // 默认敌人的尺寸
         enemyGap: 10,  // 默认敌人之间的间距
@@ -235,6 +241,7 @@ var mtfSTGMaker = function(_canvas, conf) {
         }, // 默认飞机的尺寸,
         planeIcon: './img/plane.png',// 飞机的图像
         planeNum: 1,// 飞机数量
+        planeBulletNum: 1, // 默认同时射出子弹数量（机枪数量）
         control: {// 自定义按键
             up: 'ArrowUp',
             right: 'ArrowRight',
@@ -243,7 +250,8 @@ var mtfSTGMaker = function(_canvas, conf) {
             shoot: 'Space',
             autoShoot: true, // 自动射击（移动端自动打开）
         },
-        bgAudio: 'audio/bg.mp3',
+        planeShootAudio: 'audio/m4a1.mp3', // 飞机射击音效
+        bgAudio: 'audio/bg.mp3', // 背景音乐
         shop: {// 商店
             autoSave: true, // 自动保存金币、装备（刷新页面依然有效）
             items: [
@@ -310,7 +318,7 @@ var mtfSTGMaker = function(_canvas, conf) {
          */
         xIsOver: function (x, width) {
             width = width || 0
-            return x <= CONF.canvasPadding || x >= canvas.width - CONF.canvasPadding - width
+            return x < CONF.canvasPadding || x > canvas.width - CONF.canvasPadding - width
         },
         /**
          * 判断实例的Y坐标是否越界
@@ -405,6 +413,19 @@ var mtfSTGMaker = function(_canvas, conf) {
                     }, delay)
                 }
             }
+        },
+        pasue: function() {
+            isPause = !isPause
+            CONF.cb.pause && CONF.cb.pause(isPause)
+            return isPause
+        },
+        silence: function() {
+            isSilence = !isSilence
+            CONF.cb.silence && CONF.cb.silence(isSilence)
+            if (bgAudio.src) {
+                isSilence ? bgAudio.pause() : bgAudio.play()
+            }
+            return isSilence
         }
     }
     /**
@@ -618,29 +639,40 @@ var mtfSTGMaker = function(_canvas, conf) {
      * 运行
      */
     var run = function () {
-        var we = [], enemies = [], gap = CONF.enemySize + CONF.enemyGap,
-        plane = new Plane({ // 飞机
-            x: canvas.width - CONF.planeSize.width >> 1,
-            y: canvas.height - CONF.canvasPadding - CONF.planeSize.height,
-            width: CONF.planeSize.width,
-            height: CONF.planeSize.height,
-            speed: CONF.planeSpeed,
-            bullet: {
+        var we = [], enemies = [], gap = CONF.enemySize + CONF.enemyGap
+        if (bgAudio.src === '') {
+            bgAudio.src = CONF.bgAudio
+            bgAudio.play()
+        }
+        for(var i = 0; i < CONF.planeNum; i++) {
+            var plane = new Plane({ // 飞机
+                x: (canvas.width - CONF.planeSize.width) / (CONF.planeNum + 1) * (i + 1),
+                y: canvas.height - CONF.canvasPadding - CONF.planeSize.height,
+                width: CONF.planeSize.width,
+                height: CONF.planeSize.height,
+                speed: CONF.planeSpeed,
+                bullet: []
+            })
+            var planeBulletObj = {
                 constructor: PlaneBullet,
                 opt: {
-                    setX: function(plane) {
-                        return plane.x + plane.width / 2
+                    setX: function(plane, index, total) {
+                        return plane.x + plane.width / (total + 1) * (index + 1)
                     },
                     setY: function(plane) {
                         return plane.y
                     },
                     width: 5,
                     height: CONF.bulletSize,
-                    speed: CONF.bulletSpeed
+                    speed: CONF.bulletSpeed,
+                    audio: CONF.bulletAudio
                 }
             }
-        })
-        we.push(plane)
+            for(var j = 0; j < CONF.planeBulletNum; j++) {
+                plane.bullet.push(planeBulletObj)
+            }
+            we.push(plane)
+        }
         for (var i = 0; i < CONF.level; i++) { // 敌人
             for (var j = 0, levelGap = gap * i; j < CONF.numPerLine; j++) {
                 enemies.push(new Enemy({
@@ -656,95 +688,105 @@ var mtfSTGMaker = function(_canvas, conf) {
         // 控制器对象
         var control = Control(CONF)
         // 装饰冷却时间参数的飞机射击
-        var planeShoot = Utils.throttle(plane.shoot, CONF.bulletCoolownTime, false).bind(plane)
+        var planeShoot = Utils.throttle(function() {
+            we.forEach(function(plane){
+                plane.shoot()
+            })
+        }, CONF.bulletCoolownTime, false).bind(plane)
          // 渲染
         ;(function draw () {
-            // 执行并清空任务 帧任务队列
-            FrameQueue.forEach(function(cb) {
-                cb()
-            })
-            FrameQueue.length = 0
-            // 清空画布
-            context.clearRect(CONF.canvasPadding, CONF.canvasPadding, canvas.width - CONF.canvasPadding, canvas.height - CONF.canvasPadding)
-            // 回调函数
-            if (CONF.cb.draw(we, enemies) === false) return
-            // 碰撞检测
-            Utils.collision({
-                camps: [plane.bullets, enemies],
-                cb: function(a) {
-                    for(var i = 0; i < a.length; i++) {
-                        a[i][0].status = -1
-                        a[i][1].status = 1
-                        CONF.cb.collision(a[i][0], a[i][1])
-                    }
-                }
-            })
-            // 碰撞检测：飞机和敌人
-            Utils.collision({
-                camps: [we, enemies],
-                cb: function(a) {
-                    for(var i = 0; i < a.length; i++) {
-                        a[i][0].status = -1
-                        a[i][1].status = 1
-                        CONF.cb.collision(a[i][0], a[i][1])
-                    }
-                }
-            })
-            for (var i = enemies.length; i--;) {
-                if (enemies[i].status === -1) {
-                    enemies.splice(i, 1)
-                } else {
-                    if (enemies[i].status === 1) {
-                        if (enemies[i].delay === 30) {
-                            enemies[i].status = -1
+            if (!isPause) {
+                // 执行并清空任务 帧任务队列
+                FrameQueue.forEach(function(cb) {
+                    cb()
+                })
+                FrameQueue.length = 0
+                // 清空画布
+                context.clearRect(CONF.canvasPadding, CONF.canvasPadding, canvas.width - CONF.canvasPadding, canvas.height - CONF.canvasPadding)
+                // 回调函数
+                if (CONF.cb.draw(we, enemies) === false) return
+                // 碰撞检测
+                we.forEach(function(plane){
+                    Utils.collision({
+                        camps: [plane.bullets, enemies],
+                        cb: function(a) {
+                            for(var i = 0; i < a.length; i++) {
+                                a[i][0].status = -1
+                                a[i][1].status = 1
+                                CONF.cb.collision(a[i][0], a[i][1])
+                            }
+                        }
+                    })
+                    for (var i = plane.bullets.length; i--;) {
+                        if (plane.bullets[i].status === -1) {
+                            plane.bullets.splice(i, 1)
                         } else {
-                            enemies[i].delay = (enemies[i].delay || 0) + 1
+                            plane.bullets[i].draw()
                         }
                     }
-                    enemies[i].draw()
-                }
-            }
-            for (var i = plane.bullets.length; i--;) {
-                if (plane.bullets[i].status === -1) {
-                    plane.bullets.splice(i, 1)
-                } else {
-                    plane.bullets[i].draw()
-                }
-            }
-            var pressed = control.pressed(), 
-                offsetX = 0, offsetY = 0
-            if (CONF.control.autoShoot) pressed['shoot'] = true
-            for (var key in pressed) {
-                if (pressed[key]) {
-                    switch(key) {
-                        case 'up':
-                            offsetY = -plane.speed
-                        break;
-                        case 'right':
-                            offsetX =  plane.speed
-                        break;
-                        case 'down':
-                            offsetY =  plane.speed
-                        break;
-                        case 'left':
-                            offsetX = -plane.speed
-                        break;
-                        case 'shoot':
-                            planeShoot()
-                        break;
+                })
+                
+                // 碰撞检测：飞机和敌人
+                Utils.collision({
+                    camps: [we, enemies],
+                    cb: function(a) {
+                        for(var i = 0; i < a.length; i++) {
+                            a[i][0].status = -1
+                            a[i][1].status = 1
+                            CONF.cb.collision(a[i][0], a[i][1])
+                        }
+                    }
+                })
+                for (var i = enemies.length; i--;) {
+                    if (enemies[i].status === -1) {
+                        enemies.splice(i, 1)
+                    } else {
+                        if (enemies[i].status === 1) {
+                            if (enemies[i].delay === 30) {
+                                enemies[i].status = -1
+                            } else {
+                                enemies[i].delay = (enemies[i].delay || 0) + 1
+                            }
+                        }
+                        enemies[i].draw()
                     }
                 }
-            }
-            control.draw()
-            for (var i = we.length; i--;) {
-                if (we[i].status === -1) {
-                    we.splice(i, 1)
-                } else {
-                    if (!(offsetX && Utils.xIsOver(we[i].x + offsetX, we[i].width) || 
-                          offsetY && Utils.yIsOver(we[i].y + offsetY, we[i].height))) {
-                          we[i].move(offsetX, offsetY)
+            
+                var pressed = control.pressed(), 
+                    offsetX = 0, offsetY = 0
+                if (CONF.control.autoShoot) pressed['shoot'] = true
+                for (var key in pressed) {
+                    if (pressed[key]) {
+                        switch(key) {
+                            case 'up':
+                                offsetY = -plane.speed
+                            break;
+                            case 'right':
+                                offsetX =  plane.speed
+                            break;
+                            case 'down':
+                                offsetY =  plane.speed
+                            break;
+                            case 'left':
+                                offsetX = -plane.speed
+                            break;
+                            case 'shoot':
+                                planeShoot()
+                            break;
+                        }
                     }
-                    we[i].draw()
+                }
+                control.draw()
+                for (var i = we.length; i--;) {
+                    if (we[i].status === -1) {
+                        we.splice(i, 1)
+                    } else {
+                        if (!(offsetX && Utils.xIsOver(we[i].x + offsetX, we[i].width) || 
+                            offsetY && Utils.yIsOver(we[i].y + offsetY, we[i].height))) {
+                            we[i].move(offsetX, offsetY)
+                        }
+                        we[i].draw()
+                    }
                 }
             }
             ;(window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (f) {
@@ -755,19 +797,29 @@ var mtfSTGMaker = function(_canvas, conf) {
     /**
      * 初始化
      */
-    conf && Object.assign(CONF, conf) 
+    defaultConf = JSON.parse(JSON.stringify(conf))
+    conf && Object.assign(CONF, defaultConf, {cb: conf.cb}) 
     // 静态属性：敌人移动方向
     Enemy.enemyDirection = CONF.enemyDirection
-    canvas = _canvas
-    context = canvas.getContext('2d')
+    var canvas = _canvas,
+        context = canvas.getContext('2d'),
+        isPause = false,
+        isSilence = false,
+        bgAudio = new Audio()
+        bgAudio.loop = true
     return {
         run: run,
+        reload: function() {
+            Object.assign(CONF, defaultConf, {cb: CONF.cb});
+        },
         preload: function(cb) {
             Loader.load(CONF, cb)
         },
         shop: function() {
             return Shop(CONF)
         },
+        pause: Utils.pasue,
+        silence: Utils.silence, 
         Storage: Storage
     }
 };
