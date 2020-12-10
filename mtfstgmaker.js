@@ -5,329 +5,44 @@
  * Copyright 2020, 吴小宇 Shon Ng
  * https://github.com/mantoufan
  * 
- * Date: 2020-09-20T18:02Z
+ * Date: 2020-12-10T18:02Z
  */
-var mtfSTGMaker = function(_canvas, conf) {
+var mtfSTGMaker = function(context) {
     /**
-     * 函数：子类仅继承父类原型链上的方法，构造函数正确
-     * @param {Constructor} subType 
-     * @param {Constructor} superType 
-     */
-    function inherit(subType, superType) {
-        var prototype = Object.create(superType.prototype)
-            prototype.constructor = subType
-            subType.prototype = prototype
-    }
-    /**
-     * 原型：可移动对象
-     * @param {Object} opt 对象属性
-     * @param {Integer} opt.x 横坐标
-     * @param {Integer} opt.y 纵坐标
-     * @param {Integer} opt.width 宽
-     * @param {Integer} opt.height 高
-     * @param {Integer} opt.speed 速度
-     */
-    function MovableObject(opt) {
-        opt = opt || Object.create(null)
-        this.x = opt.x
-        this.y = opt.y
-        this.width = opt.width
-        this.height = opt.height
-        this.speed = opt.speed
-        this.status = 0 // 实例状态：0 活（默认） -1 应回收 >= 0 状态与图标索引对应
-        MovableObject.load.call(this)
-    }
-    /**
-     * 静态方法：读取imgSrc引用的图片
-     */
-    MovableObject.load = function() {
-        if (!this.constructor.icons && this.constructor.iconSrcs) {
-            var _this = this
-            this.constructor.icons = []
-            this.constructor.iconSrcs.forEach(function(src, index) {
-                var icon = new Image()
-                icon.src = src
-                icon.onload = function() {
-                    _this.constructor.icons[index] = icon
-                }
-            })
-        }
-    }
-    /**
-     * 方法：移动
-     * @param {Integer} x 水平偏移量
-     * @param {Integer} y 竖直偏移量
-     */
-    MovableObject.prototype.move = function(offsetX, offsetY) {
-        this.x += offsetX
-        this.y += offsetY
-    }
-    /**
-     * 方法：绘制
-     */
-    MovableObject.prototype.draw = function() {
-        this.constructor.beforeDraw && this.constructor.beforeDraw.call(this) // 绘制前调用
-        if (this.constructor.icons && this.status > -1 && this.constructor.icons[this.status]) {
-            context.drawImage(this.constructor.icons[this.status], this.x, this.y, this.width, this.height)
-        } else {
-            context.fillRect(this.x, this.y, this.width, this.height)
-        }
-    }
-    /**
-     * 原型：可射击对象
-     * @param {Object} opt 对象属性
-     * @param {Integer} opt.x 横坐标
-     * @param {Integer} opt.y 纵坐标
-     * @param {Integer} opt.width 宽
-     * @param {Integer} opt.height 高
-     * @param {Integer} opt.speed 速度
-     * @param {Constructor} opt.bullet.constructor 子弹类型
-     * @param {Constructor} opt.bullet.opt 子弹配置
-     * @param {Integer} opt.bullet.opt.x 子弹横坐标
-     * @param {Integer} opt.bullet.opt.y 子弹纵坐标
-     * @param {Function(new ShootingObject)} opt.bullet.opt.setX 子弹横坐标：传入发射子弹实例
-     * @param {Function(new ShootingObject)} opt.bullet.opt.setY 子弹纵坐标：传入发射子弹实例
-     * @param {Integer} opt.bullet.opt.width 子弹宽度
-     * @param {Integer} opt.bullet.opt.height 子弹高度
-     * @param {Integer} opt.bullet.opt.speed 子弹速度
-     */
-    function ShootingObject(opt) {
-        opt = opt || Object.create(null)
-        MovableObject.call(this, opt)
-        this.bullet = opt.bullet
-        this.bullets = []
-    }
-    inherit(ShootingObject, MovableObject)
-    ShootingObject.prototype.shoot = function() {
-        var self = this
-        if (self.bullet) {
-            self.bullet.forEach(function(bullet, index, ar) {
-                bullet.opt = bullet.opt || Object.create(null)
-                if (bullet.opt.setX) {
-                    bullet.opt.x = bullet.opt.setX(self, index, ar.length)
-                }
-                if (bullet.opt.setY) {
-                    bullet.opt.y = bullet.opt.setY(self, index, ar.length)
-                }
-                self.bullets.push(new bullet.constructor(
-                    bullet.opt
-                ))
-            }) 
-        }
-        if (!isSilence && this.constructor.shootAudioSrc) {
-            var audio = new Audio(this.constructor.shootAudioSrc)
-            audio.play()
-        }
-    }
-    /**
-     * 原型：飞机
-     * @param {Object} opt 对象属性
-     * @param {Integer} opt.x 横坐标
-     * @param {Integer} opt.y 纵坐标
-     * @param {Integer} opt.width 宽
-     * @param {Integer} opt.height 高
-     * @param {Integer} opt.speed 速度
-     * @param {Constructor} opt.bullet.constructor 子弹类型
-     * @param {Constructor} opt.bullet.opt 子弹配置
-     * @param {Integer} opt.bullet.opt.x 子弹横坐标
-     * @param {Integer} opt.bullet.opt.y 子弹纵坐标
-     * @param {Function(new ShootingObject)} opt.bullet.opt.setX 子弹横坐标：传入发射子弹实例
-     * @param {Function(new ShootingObject)} opt.bullet.opt.setY 子弹纵坐标：传入发射子弹实例
-     * @param {Integer} opt.bullet.opt.width 子弹宽度
-     * @param {Integer} opt.bullet.opt.height 子弹高度
-     * @param {Integer} opt.bullet.opt.speed 子弹速度
-     */
-    function Plane(opt) {
-        opt = opt || Object.create(null)
-        Plane.iconSrcs = [CONF.planeIcon, CONF.enemyBoomIcon]
-        Plane.shootAudioSrc = CONF.planeShootAudio
-        ShootingObject.call(this, opt)
-    }
-    inherit(Plane, ShootingObject)
-    /**
-     * 原型：飞机子弹
-     * @param {Object} opt 对象属性
-     * @param {Integer} opt.x 横坐标
-     * @param {Integer} opt.y 纵坐标
-     * @param {Integer} opt.width 宽
-     * @param {Integer} opt.height 高
-     * @param {Integer} opt.speed 速度
-     */
-    function PlaneBullet(opt) {
-        MovableObject.call(this, opt)
-    }
-    /**
-     * 静态方法：绘制前，子弹向上移动
-     */
-    PlaneBullet.beforeDraw = function() {
-        if (Utils.yIsOver(this.y - this.speed - this.height, this.height)) {
-            this.status = -1
-        } else {
-            this.move(0, -this.speed)
-        }
-    }
-    inherit(PlaneBullet, MovableObject)
-    /**
-     * 方法：绘制飞机子弹
-     */
-    PlaneBullet.prototype.draw = function() {
-        this.constructor.beforeDraw && this.constructor.beforeDraw.call(this) // 绘制前调用
-        context.beginPath()
-        context.moveTo(this.x, this.y)
-        context.lineTo(this.x, this.y - this.height)
-        context.strokeStyle = '#fff'
-        context.stroke()
-        context.closePath()
-    }
-    /**
-     * 原型：敌人
-     * @param {Object} opt 对象属性
-     * @param {Integer} opt.x 横坐标
-     * @param {Integer} opt.y 纵坐标
-     * @param {Integer} opt.size 大小
-     * @param {Integer} opt.speed 速度
-     * @param {String} opt.enemyDirection 移动方向
-     */
-    function Enemy(opt) {
-        Enemy.iconSrcs = [CONF.enemyIcon, CONF.enemyBoomIcon]
-        MovableObject.call(this, opt)
-    }
-    /**
-     * 静态方法：绘制前，敌人水平往复，遇边界下移
-     */
-    Enemy.beforeDraw = function() {
-        if (this.enemyDirection !== Enemy.enemyDirection) {
-            this.move(0, this.speed)
-            this.enemyDirection = Enemy.enemyDirection
-        }
-        this.move(Enemy.enemyDirection === 'right' ? this.speed : -this.speed, 0)
-        if (!Enemy.enemyDirectionLock) {
-            if (Utils.xIsOver(this.x, this.width)) {
-                Enemy.enemyDirectionLock = true
-                // 帧任务队列：下一帧更新敌人移动方向
-                FrameQueue.push(function() {
-                    Enemy.enemyDirectionLock = false
-                    Enemy.enemyDirection = Enemy.enemyDirection === 'right' ? 'left' : 'right'
-                })
-            }
-        }
-    }
-    inherit(Enemy, MovableObject)
-    /**
-     * 帧任务队列：每一帧时执行队列中的任务，并清空队列
-     */
-    var FrameQueue = []
-
-    // 全局配置
-    var CONF = {
-        status: 'start', // 游戏开始默认为开始中
-        level: 6, // 游戏默认等级
-        totalLevel: 8, // 总共2关
-        numPerLine: 4, // 游戏默认每行多少个怪兽
-        canvasPadding: 30, // 默认画布的内边距
-        bulletSize: 10, // 默认子弹长度
-        bulletSpeed: 10, // 默认子弹的移动速度
-        bulletCoolownTime: 100, // 默认子弹的冷却时间（秒）
-        enemySpeed: 2, // 默认敌人移动距离
-        enemySize: 50, // 默认敌人的尺寸
-        enemyGap: 10,  // 默认敌人之间的间距
-        enemyIcon: './img/enemy.png', // 怪兽的图像
-        enemyBoomIcon: './img/boom.png', // 怪兽死亡的图像
-        enemyDirection: 'right', // 默认敌人一开始往右移动
-        planeSpeed: 3, // 默认飞机每一步移动的距离
-        planeSize: {
-            width: 60,
-            height: 100
-        }, // 默认飞机的尺寸,
-        planeIcon: './img/plane.png',// 飞机的图像
-        planeNum: 1,// 飞机数量
-        planeBulletNum: 1, // 默认同时射出子弹数量（机枪数量）
-        control: {// 自定义按键
-            up: 'ArrowUp',
-            right: 'ArrowRight',
-            down: 'ArrowDown',
-            left: 'ArrowLeft',
-            shoot: 'Space',
-            autoShoot: true, // 自动射击（移动端自动打开）
-        },
-        planeShootAudio: 'audio/m4a1.mp3', // 飞机射击音效
-        bgAudio: 'audio/bg.mp3', // 背景音乐
-        shop: {// 商店
-            autoSave: true, // 自动保存金币、装备（刷新页面依然有效）
-            items: [
-                {
-                    key: 'control.autoShoot', // 对应的配置键名
-                    name: '自动射击', // 商品名称
-                    value: [true, false], // 对应的配置键值
-                    display: ['开', '关'], // 键值在商店的展示名称
-                    gold: 0 // 切换所需金币
-                },
-                {
-                    key: 'bulletSpeed',
-                    name: '子弹速度',
-                    value: [5, 10, 15, 20, 25],
-                    isUpgrade: true, // 只允许升级，不允许任意选择
-                    gold: 1 // 升级所需金币
-                },
-                {
-                    key: 'bulletCoolownTime',
-                    name: '装弹速度',
-                    value: [100, 90, 80, 70, 60],
-                    isUpgrade: true,
-                    gold: 1
-                },
-                {
-                    key: 'bulletNum',
-                    name: '机枪数量',
-                    value: [1, 2, 3, 4, 5],
-                    isUpgrade: true,
-                    gold: 1
-                },
-                {
-                    key: 'planeSpeed',
-                    name: '飞机速度',
-                    value: [3, 4, 5, 6, 7],
-                    isUpgrade: true,
-                    gold: 1
-                },
-                {
-                    key: 'planeSize',
-                    name: '飞机尺寸',
-                    value: [{width: 60, height: 100}, {width: 30, height: 50}, {width: 15, height: 25}],
-                    display: ['大', '中', '小'],
-                    gold: 1
-                },
-                {
-                    key: 'planeNum',
-                    name: '飞机数量',
-                    value: [1, 2, 3, 4, 5],
-                    isUpgrade: true,
-                    gold: 1
-                }
-            ]
-        }
-    }, canvas, context
-    /**
-     * 通用方法对象
+     * 通用方法实例
      */
     var Utils = {
+        /**
+         * 函数：子类仅继承父类原型链上的方法，构造函数正确
+         * @param {Constructor} subType 
+         * @param {Constructor} superType 
+         */
+        inherit: function (subType, superType) {
+            var prototype = Object.create(superType.prototype)
+                prototype.constructor = subType
+                subType.prototype = prototype
+        },
         /**
          * 判断实例的X坐标是否越界
          * @param {Integer} x 实例的X坐标
          * @param {Integer} width 实例的宽度
+         * @param {Integer} padding 边距
          */
-        xIsOver: function (x, width) {
+        xIsOver: function (x, width, padding) {
             width = width || 0
-            return x < CONF.canvasPadding || x > canvas.width - CONF.canvasPadding - width
+            padding = padding || 0
+            return x < padding || x > canvas.width - padding - width
         },
         /**
          * 判断实例的Y坐标是否越界
          * @param {Integer} y 实例的Y坐标
          * @param {Integer} height 实例的高度
+         * @param {Integer} padding 边距
          */
-        yIsOver: function (y, height) {
+        yIsOver: function (y, height, padding) {
             height = height || 0
-            return y <= CONF.canvasPadding || y >= canvas.height - CONF.canvasPadding - height
+            padding = padding || 0
+            return y <= padding || y >= canvas.height - padding - height
         },
         /**
          * AABB：找出一维投影相交，且阵营不同的实例对
@@ -414,32 +129,140 @@ var mtfSTGMaker = function(_canvas, conf) {
                 }
             }
         },
-        pasue: function() {
-            isPause = !isPause
-            CONF.cb.pause && CONF.cb.pause(isPause)
-            return isPause
+        /**
+         * 暂停
+         */
+        pause: function() {
+            return isPause = !isPause
         },
+        /**
+         * 静音
+         */
         silence: function() {
-            isSilence = !isSilence
-            CONF.cb.silence && CONF.cb.silence(isSilence)
-            if (bgAudio.src) {
-                isSilence ? bgAudio.pause() : bgAudio.play()
-            }
-            return isSilence
+            return isSilence = !isSilence
+        },
+    }
+
+    /**
+     * 原型：可移动对象
+     * @param {Object} opt 对象属性
+     * @param {Integer} opt.x 横坐标
+     * @param {Integer} opt.y 纵坐标
+     * @param {Integer} opt.width 宽
+     * @param {Integer} opt.height 高
+     * @param {Integer} opt.speed 速度
+     */
+    function MovableObject(opt) {
+        opt = opt || Object.create(null)
+        this.x = opt.x
+        this.y = opt.y
+        this.width = opt.width
+        this.height = opt.height
+        this.speed = opt.speed
+        this.status = 0 // 实例状态：0 活（默认） -1 应回收 >= 0 状态与图标索引对应
+        MovableObject.load.call(this)
+    }
+    /**
+     * 静态方法：读取imgSrc引用的图片
+     */
+    MovableObject.load = function() {
+        if (!this.constructor.icons && this.constructor.iconSrcs) {
+            var _this = this
+            this.constructor.icons = []
+            this.constructor.iconSrcs.forEach(function(src, index) {
+                var icon = new Image()
+                icon.src = src
+                icon.onload = function() {
+                    _this.constructor.icons[index] = icon
+                }
+            })
         }
     }
     /**
+     * 方法：移动
+     * @param {Integer} x 水平偏移量
+     * @param {Integer} y 竖直偏移量
+     */
+    MovableObject.prototype.move = function(offsetX, offsetY) {
+        this.x += offsetX
+        this.y += offsetY
+    }
+    /**
+     * 方法：绘制
+     */
+    MovableObject.prototype.draw = function() {
+        this.constructor.beforeDraw && this.constructor.beforeDraw.call(this) // 绘制前调用
+        if (this.constructor.icons && this.status > -1 && this.constructor.icons[this.status]) {
+            context.drawImage(this.constructor.icons[this.status], this.x, this.y, this.width, this.height)
+        } else {
+            context.fillRect(this.x, this.y, this.width, this.height)
+        }
+    }
+    /**
+     * 原型：可射击对象
+     * @param {Object} opt 对象属性
+     * @param {Integer} opt.x 横坐标
+     * @param {Integer} opt.y 纵坐标
+     * @param {Integer} opt.width 宽
+     * @param {Integer} opt.height 高
+     * @param {Integer} opt.speed 速度
+     * @param {Constructor} opt.bullet.constructor 子弹类型
+     * @param {Constructor} opt.bullet.opt 子弹配置
+     * @param {Integer} opt.bullet.opt.x 子弹横坐标
+     * @param {Integer} opt.bullet.opt.y 子弹纵坐标
+     * @param {Function(new ShootingObject)} opt.bullet.opt.setX 子弹横坐标：传入发射子弹实例
+     * @param {Function(new ShootingObject)} opt.bullet.opt.setY 子弹纵坐标：传入发射子弹实例
+     * @param {Integer} opt.bullet.opt.width 子弹宽度
+     * @param {Integer} opt.bullet.opt.height 子弹高度
+     * @param {Integer} opt.bullet.opt.speed 子弹速度
+     */
+    function ShootingObject(opt) {
+        opt = opt || Object.create(null)
+        MovableObject.call(this, opt)
+        this.bullet = opt.bullet
+        this.bullets = []
+    }
+    Utils.inherit(ShootingObject, MovableObject)
+    ShootingObject.prototype.shoot = function() {
+        var self = this
+        if (self.bullet) {
+            self.bullet.forEach(function(bullet, index, ar) {
+                bullet.opt = bullet.opt || Object.create(null)
+                if (bullet.opt.setX) {
+                    bullet.opt.x = bullet.opt.setX(self, index, ar.length)
+                }
+                if (bullet.opt.setY) {
+                    bullet.opt.y = bullet.opt.setY(self, index, ar.length)
+                }
+                self.bullets.push(new bullet.constructor(
+                    bullet.opt
+                ))
+            }) 
+        }
+        if (!isSilence && this.constructor.shootAudioSrc) {
+            var audio = new Audio(this.constructor.shootAudioSrc)
+            audio.play()
+        }
+    }
+    
+    /**
      * 资源加载实例
+     * @return {Function} load 预加载资源列表的方法
      */
     var Loader = (function() {
-        function load(CONF, cb) {
+        /**
+         * 
+         * @param {Array|Object} resList 资源列表（包含资源链接的数组或对象）
+         * @param {Function(progress)} cb 每加载完一个资源回调，并传入加载进度1 - 100
+         */
+        function load(resList, cb) {
             var imgList = [], audioList = []
-            for(var i in CONF) {
-                if (/.(png|gif|jpg|webp)$/.test(CONF[i])) {
-                    imgList.push(CONF[i])
+            for(var i in resList) {
+                if (/.(png|gif|jpg|webp)$/.test(resList[i])) {
+                    imgList.push(resList[i])
                     
-                } else if (/.(mp3|m4a|wav)$/.test(CONF[i])) {
-                    audioList.push(CONF[i])
+                } else if (/.(mp3|m4a|wav)$/.test(resList[i])) {
+                    audioList.push(resList[i])
                 }
             }
             var total = imgList.length + audioList.length, loadedNum = 0
@@ -468,27 +291,35 @@ var mtfSTGMaker = function(_canvas, conf) {
         }
     })()
     /**
-     * 控制对象
+     * 控制类
+     * @param {Object} opt 配置对象
+     * @param {Object} opt.control 按键设置
+     * @param {String} opt.control.up 上键keyCode
+     * @param {String} opt.control.right 右键keyCode
+     * @param {String} opt.control.down 下键keyCode
+     * @param {String} opt.control.left 左键keyCode
+     * @param {String} opt.control.shoot 射击键keyCode
+     * @param {Integer} opt.padding 内边距
      */
-    var Control = function(CONF) {
+    var Control = function(opt) {
         var up = false, right = false, down = false, left = false, shoot = false,
             prevClientX, prevClientY
         function processKey (e, eventName) {
             var b = eventName === 'keydown'
             switch(e.code) {
-                case CONF.control.up:
+                case opt.control.up:
                     up = b
                 break;
-                case CONF.control.right:
+                case opt.control.right:
                     right = b
                 break;
-                case CONF.control.down:
+                case opt.control.down:
                     down = b
                 break;
-                case CONF.control.left:
+                case opt.control.left:
                     left = b
                 break;
-                case CONF.control.shoot:
+                case opt.control.shoot:
                     shoot = b
                 break;
             }
@@ -532,7 +363,7 @@ var mtfSTGMaker = function(_canvas, conf) {
             draw: function() {
                 if (!prevClientX || !prevClientY) return
                 var d = 30, offsetX = left ? -d : right ? d : 0, offsetY = up ? -d : down ? d : 0
-                if (!(Utils.xIsOver(prevClientX + offsetX) || Utils.yIsOver(prevClientY + offsetY))) {
+                if (!(Utils.xIsOver(prevClientX + offsetX, 0, opt.padding) || Utils.yIsOver(prevClientY + offsetY, 0, opt.padding))) {
                     arrow(prevClientX + (offsetX >> 1), prevClientY + (offsetY >> 1), prevClientX + offsetX, prevClientY + offsetY, '#fff')
                 }
             },
@@ -590,16 +421,25 @@ var mtfSTGMaker = function(_canvas, conf) {
         }
     })()
     /**
-     * 商店对象
+     * 商店类
+     * @param {Object} opt 配置对象
+     * @param {Boolean} opt.conf 商店对应的配置表（商店要修改配置表中的配置）
+     * @param {Boolean} opt.autoSave 自动保存配置
+     * @param {Array[item]} opt.items 商品物品列表
+     *** @param {Object} item 商店物品
+     *** @param {String} item.name 物品名称
+     *** @param {String} item.keyStr 物品对应配置的键名，多级用.相连
+     *** @param {Array} item.value 物品对应配置的可选键值列表
+     *** @param {Array} item.display 物品对应配置的可选键值展示名称列表
      */
-    var Shop = function (CONF) {
+    var Shop = function (opt) {
         function list() {
-            var items = CONF.shop.items;
-            for(var i = 0; i < items.length; i++) {
-                var item = items[i], keyStr = item.key, values = item.value
+            var items = Array(opt.items.length)
+            for(var i = 0; i < opt.items.length; i++) {
+                var item = opt.items[i], keyStr = item.keyStr, values = item.value
                 item.selIndex = -1
                 if (keyStr) {
-                    var selValue = Storage.getKeyStrValue(CONF, keyStr)
+                    var selValue = Storage.getKeyStrValue(opt.conf, keyStr)
                     for (var j = 0; j < values.length; j++) {
                         if (typeof selValue === 'object' ? 
                             JSON.stringify(values[j]) === JSON.stringify(selValue) :
@@ -610,23 +450,25 @@ var mtfSTGMaker = function(_canvas, conf) {
                         }
                     }
                 }
+                items[i] = item
             }
             return items
         }
         function buy(itemIndex, valueIndex, cb) {
-            var items    = CONF.shop.items,
+            var items    = opt.items,
                 item     = items[itemIndex],
                 value    = item.value[valueIndex],
-                keyStr   = item.key,
-                autoSave = CONF.shop.autoSave
-                Storage.setKeyStrValue(CONF, keyStr, value)
+                keyStr   = item.keyStr,
+                autoSave = opt.autoSave
+                Storage.setKeyStrValue(opt.conf, keyStr, value)
                 if(autoSave) Storage.set(keyStr, value)
                 cb && cb(item)
+                console.log(opt.conf)
         }
         function load() {
             var mtfSTGMakerStorage = Storage.get()
             for (var keyStr in mtfSTGMakerStorage) {
-                Storage.setKeyStrValue(CONF, keyStr, mtfSTGMakerStorage[keyStr])
+                Storage.setKeyStrValue(opt.conf, keyStr, mtfSTGMakerStorage[keyStr])
             }
         }
         return {
@@ -636,190 +478,31 @@ var mtfSTGMaker = function(_canvas, conf) {
         }
     }
     /**
-     * 运行
+     * 绘制类
+     * @param {Object} cb 回调函数
      */
-    var run = function () {
-        var we = [], enemies = [], gap = CONF.enemySize + CONF.enemyGap
-        if (bgAudio.src === '') {
-            bgAudio.src = CONF.bgAudio
-            bgAudio.play()
+    var Draw = function (cb) {
+        if (!isPause && cb) {
+            if(cb() === false) return
         }
-        for(var i = 0; i < CONF.planeNum; i++) {
-            var plane = new Plane({ // 飞机
-                x: (canvas.width - CONF.planeSize.width) / (CONF.planeNum + 1) * (i + 1),
-                y: canvas.height - CONF.canvasPadding - CONF.planeSize.height,
-                width: CONF.planeSize.width,
-                height: CONF.planeSize.height,
-                speed: CONF.planeSpeed,
-                bullet: []
-            })
-            var planeBulletObj = {
-                constructor: PlaneBullet,
-                opt: {
-                    setX: function(plane, index, total) {
-                        return plane.x + plane.width / (total + 1) * (index + 1)
-                    },
-                    setY: function(plane) {
-                        return plane.y
-                    },
-                    width: 5,
-                    height: CONF.bulletSize,
-                    speed: CONF.bulletSpeed,
-                    audio: CONF.bulletAudio
-                }
-            }
-            for(var j = 0; j < CONF.planeBulletNum; j++) {
-                plane.bullet.push(planeBulletObj)
-            }
-            we.push(plane)
-        }
-        for (var i = 0; i < CONF.level; i++) { // 敌人
-            for (var j = 0, levelGap = gap * i; j < CONF.numPerLine; j++) {
-                enemies.push(new Enemy({
-                    x: CONF.canvasPadding + gap * j,
-                    y: CONF.canvasPadding + levelGap,
-                    width: CONF.enemySize,
-                    height: CONF.enemySize,
-                    speed: CONF.enemySpeed,
-                    enemyDirection: CONF.enemyDirection
-                }))
-            }
-        }
-        // 控制器对象
-        var control = Control(CONF)
-        // 装饰冷却时间参数的飞机射击
-        var planeShoot = Utils.throttle(function() {
-            we.forEach(function(plane){
-                plane.shoot()
-            })
-        }, CONF.bulletCoolownTime, false).bind(plane)
-         // 渲染
-        ;(function draw () {
-            if (!isPause) {
-                // 执行并清空任务 帧任务队列
-                FrameQueue.forEach(function(cb) {
-                    cb()
-                })
-                FrameQueue.length = 0
-                // 清空画布
-                context.clearRect(CONF.canvasPadding, CONF.canvasPadding, canvas.width - CONF.canvasPadding, canvas.height - CONF.canvasPadding)
-                // 回调函数
-                if (CONF.cb.draw(we, enemies) === false) return
-                // 碰撞检测
-                we.forEach(function(plane){
-                    Utils.collision({
-                        camps: [plane.bullets, enemies],
-                        cb: function(a) {
-                            for(var i = 0; i < a.length; i++) {
-                                a[i][0].status = -1
-                                a[i][1].status = 1
-                                CONF.cb.collision(a[i][0], a[i][1])
-                            }
-                        }
-                    })
-                    for (var i = plane.bullets.length; i--;) {
-                        if (plane.bullets[i].status === -1) {
-                            plane.bullets.splice(i, 1)
-                        } else {
-                            plane.bullets[i].draw()
-                        }
-                    }
-                })
-                
-                // 碰撞检测：飞机和敌人
-                Utils.collision({
-                    camps: [we, enemies],
-                    cb: function(a) {
-                        for(var i = 0; i < a.length; i++) {
-                            a[i][0].status = -1
-                            a[i][1].status = 1
-                            CONF.cb.collision(a[i][0], a[i][1])
-                        }
-                    }
-                })
-                for (var i = enemies.length; i--;) {
-                    if (enemies[i].status === -1) {
-                        enemies.splice(i, 1)
-                    } else {
-                        if (enemies[i].status === 1) {
-                            if (enemies[i].delay === 30) {
-                                enemies[i].status = -1
-                            } else {
-                                enemies[i].delay = (enemies[i].delay || 0) + 1
-                            }
-                        }
-                        enemies[i].draw()
-                    }
-                }
-            
-                var pressed = control.pressed(), 
-                    offsetX = 0, offsetY = 0
-                if (CONF.control.autoShoot) pressed['shoot'] = true
-                for (var key in pressed) {
-                    if (pressed[key]) {
-                        switch(key) {
-                            case 'up':
-                                offsetY = -plane.speed
-                            break;
-                            case 'right':
-                                offsetX =  plane.speed
-                            break;
-                            case 'down':
-                                offsetY =  plane.speed
-                            break;
-                            case 'left':
-                                offsetX = -plane.speed
-                            break;
-                            case 'shoot':
-                                planeShoot()
-                            break;
-                        }
-                    }
-                }
-                control.draw()
-                for (var i = we.length; i--;) {
-                    if (we[i].status === -1) {
-                        we.splice(i, 1)
-                    } else {
-                        if (!(offsetX && Utils.xIsOver(we[i].x + offsetX, we[i].width) || 
-                            offsetY && Utils.yIsOver(we[i].y + offsetY, we[i].height))) {
-                            we[i].move(offsetX, offsetY)
-                        }
-                        we[i].draw()
-                    }
-                }
-            }
-            ;(window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (f) {
-                window.setTimeout(f, 1000 / 60)
-            })(draw)
-        })()
+        ;(window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (f) {
+            window.setTimeout(f, 1000 / 60)
+        })(Draw.bind(this, cb))
     }
-    /**
-     * 初始化
-     */
-    defaultConf = JSON.parse(JSON.stringify(conf))
-    conf && Object.assign(CONF, defaultConf, {cb: conf.cb}) 
-    // 静态属性：敌人移动方向
-    Enemy.enemyDirection = CONF.enemyDirection
-    var canvas = _canvas,
-        context = canvas.getContext('2d'),
-        isPause = false,
-        isSilence = false,
-        bgAudio = new Audio()
-        bgAudio.loop = true
+
+    var isPause = false, // 是否暂停
+        isSilence = false // 是否静音
+        
     return {
-        run: run,
-        reload: function() {
-            Object.assign(CONF, defaultConf, {cb: CONF.cb});
+        Proto: {
+            MovableObject: MovableObject,
+            ShootingObject: ShootingObject
         },
-        preload: function(cb) {
-            Loader.load(CONF, cb)
-        },
-        shop: function() {
-            return Shop(CONF)
-        },
-        pause: Utils.pasue,
-        silence: Utils.silence, 
-        Storage: Storage
+        Utils: Utils,
+        Storage: Storage,
+        Loader: Loader,
+        Control: Control,
+        Shop: Shop,
+        Draw: Draw
     }
-};
+}
