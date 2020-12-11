@@ -199,7 +199,7 @@ var GAME = {
   _shop: function() {
     var self = this, timer = null, shop = self.shop(),
         shopDom = document.querySelector('.game-shop'),
-        goldDom = document.querySelector('.game-gold'),
+        goldDom = document.querySelector('.game-shop-gold'),
         backBtn = document.querySelector('.js-back');
     /** 创建DOM、赋值并添加到父节点中
      * @param {String} tagName DOM标签名
@@ -272,6 +272,7 @@ var GAME = {
                 // isUpgrade为True，只允许顺序升级
                 if (item.isUpgrade && valueIndex !== item.selIndex + 1) return
                 if (item.gold > self.data.gold) { // 金币不够
+                  alert('金币不足');
                   goldDom.classList.add('game-gold-lack');
                   if(!timer) timer = setTimeout(function() {
                     goldDom.classList.remove('game-gold-lack');
