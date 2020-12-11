@@ -469,7 +469,6 @@ var mtfSTGMaker = function(context) {
                 Storage.setKeyStrValue(opt.conf, keyStr, value)
                 if(autoSave) Storage.set(keyStr, value)
                 cb && cb(item)
-                console.log(opt.conf)
         }
         function load() {
             var mtfSTGMakerStorage = Storage.get()

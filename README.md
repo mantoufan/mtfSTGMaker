@@ -209,5 +209,6 @@ Draw(function() {
 ```
 5. 这样我们就可以在画布上：展示一个飞机，按下空格，飞机会射出子弹
 ## 完整示例
-[示例游戏]()
-![示例游戏图片]()
+[示例游戏](https://mantoufan.github.io/mtfSTGMaker/demo/index.html)
+![示例游戏商店图片](https://i.loli.net/2020/12/11/RjQTHUJ6ZSpuhNE.png)
+![示例游戏图片](https://i.loli.net/2020/12/11/KkyLTqzbBWrISJR.png)
