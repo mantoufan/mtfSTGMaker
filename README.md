@@ -211,4 +211,5 @@ Draw(function() {
 ## 完整示例
 [示例游戏](https://mantoufan.github.io/mtfSTGMaker/demo/index.html)
 ![示例游戏商店图片](https://i.loli.net/2020/12/11/RjQTHUJ6ZSpuhNE.png)
-![示例游戏图片](https://i.loli.net/2020/12/11/KkyLTqzbBWrISJR.png)
+![示例游戏图片-单个飞机](https://i.loli.net/2020/12/11/KkyLTqzbBWrISJR.png)
+![示例游戏图片-多个飞机](https://i.loli.net/2020/12/11/yZRX2kb9xg7nMcJ.png)
