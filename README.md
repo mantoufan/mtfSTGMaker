@@ -4,7 +4,7 @@ MTF射击游戏生成器，封装角色、装备、碰撞检测、资源预加�
 1. 创建画布，引入`js`
 ```html
 <canvas id="canvas"></canvas>
-<script src="mtfstgmaker.js" ></script>
+<script src="https://cdn.dm126.com/all/m/mtf/mtfSTGMaker/dist/1.0.0/mtfstgmaker.js" ></script>
 ```
 2. 创建对象，传入画布上下文
 ```javascript
