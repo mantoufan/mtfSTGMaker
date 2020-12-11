@@ -14,8 +14,8 @@ var mtfSTGMaker = function(context) {
     var Utils = {
         /**
          * 函数：子类仅继承父类原型链上的方法，构造函数正确
-         * @param {Constructor} subType 
-         * @param {Constructor} superType 
+         * @param {Constructor} subType 子类原型
+         * @param {Constructor} superType 父类原型
          */
         inherit: function (subType, superType) {
             var prototype = Object.create(superType.prototype)
@@ -23,7 +23,7 @@ var mtfSTGMaker = function(context) {
                 subType.prototype = prototype
         },
         /**
-         * 判断实例的X坐标是否越界
+         * 判断实例的是否水平越界
          * @param {Integer} x 实例的X坐标
          * @param {Integer} width 实例的宽度
          * @param {Integer} padding 边距
@@ -34,7 +34,7 @@ var mtfSTGMaker = function(context) {
             return x < padding || x > canvas.width - padding - width
         },
         /**
-         * 判断实例的Y坐标是否越界
+         * 判断实例的是否垂直越界
          * @param {Integer} y 实例的Y坐标
          * @param {Integer} height 实例的高度
          * @param {Integer} padding 边距
@@ -304,6 +304,12 @@ var mtfSTGMaker = function(context) {
     var Control = function(opt) {
         var up = false, right = false, down = false, left = false, shoot = false,
             prevClientX, prevClientY
+            opt.control = opt.control || Object.create(null)
+            opt.control.up = opt.control.up || 'ArrowUp'
+            opt.control.right = opt.control.right || 'ArrowRight'
+            opt.control.down = opt.control.down || 'ArrowDown'
+            opt.control.left = opt.control.left || 'ArrowLeft'
+            opt.control.shoot = opt.control.shoot || 'Space'
         function processKey (e, eventName) {
             var b = eventName === 'keydown'
             switch(e.code) {
@@ -398,16 +404,16 @@ var mtfSTGMaker = function(context) {
         function getKeyStrValue(map, keyStr) {
             return _keyStrValue(map, keyStr, -Infinity)
         }
-        function set(keyStr, val) {
+        function set(key, val) {
             var mtfSTGMakerStorage = localStorage.getItem(uuid)
             mtfSTGMakerStorage = JSON.parse(mtfSTGMakerStorage) || Object.create(null)
-            mtfSTGMakerStorage[keyStr] = val
+            mtfSTGMakerStorage[key] = val
             return localStorage.setItem(uuid, JSON.stringify(mtfSTGMakerStorage)), val
         }
-        function get(keyStr) {
+        function get(key) {
             var mtfSTGMakerStorage = localStorage.getItem(uuid)
             mtfSTGMakerStorage = JSON.parse(mtfSTGMakerStorage) || Object.create(null)
-            return keyStr ? mtfSTGMakerStorage[keyStr] : mtfSTGMakerStorage
+            return key ? mtfSTGMakerStorage[key] : mtfSTGMakerStorage
         }
         function clear() {
             return localStorage.removeItem(uuid)
@@ -487,7 +493,7 @@ var mtfSTGMaker = function(context) {
         }
         ;(window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (f) {
             window.setTimeout(f, 1000 / 60)
-        })(Draw.bind(this, cb))
+        })(Draw.bind(null, cb))
     }
 
     var isPause = false, // 是否暂停

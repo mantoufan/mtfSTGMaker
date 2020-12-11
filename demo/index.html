@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./style.css">
+  <style></style>
+  <title>射击游戏</title>
+</head>
+<body>
+  <div id="game" data-status="start">  
+    <div class="game-panel">
+      <section class="game-intro game-ui">
+        <h1 class="section-title">射击游戏</h1>
+        <p class="game-desc">这是一个令人欲罢不能的射击游戏，使用 ← 和 → 操作你的飞机，使用空格（space）进行射击。一起来消灭宇宙怪兽吧！</p>
+        <p class="game-level">当前Level: <span class="level">1</span></p>
+        <button class="js-play js-a button">开始游戏<span>A</span></button>
+        <button class="js-shop js-b button">商店<span>B</span></button>
+        <button class="js-reset js-r button">重置<span>R</span></button>
+        <p class="game-preload"></p>
+      </section>
+      <section class="game-failed game-ui">
+        <h1 class="section-title">游戏结束</h1>
+        <p class="game-score">最终得分: <span class="score"></span></p>
+        <button class="js-replay js-a button">重新开始<span>A</span></button>
+        <button class="js-shop js-b button">商店<span>B</span></button>
+      </section>
+      <section class="game-success game-ui">
+        <h1 class="section-title">游戏成功</h1>
+        <p class="game-score">得分: <span class="score"></span></p>
+        <p class="game-gold">金币: <span class="gold"></span></p>
+        <p class="game-level">Level: <span class="level">1</span></p>
+        <button class="js-next js-a button">继续游戏<span>A</span></button>
+        <button class="js-shop js-b button">商店<span>B</span></button>
+      </section>
+      <section class="game-all-success game-ui">
+        <h1 class="section-title">通关成功</h1>
+        <p class="game-score">最终得分: <span class="score"></span></p>
+        <p class="game-desc">你成功防御了怪兽的所有攻击。</p>
+        <button class="js-replay js-a button">回到标题<span>A</span></button>
+      </section>
+      <section class="game-shop game-ui">
+        <h1 class="section-title">商店</h1>
+        <p class="game-gold">金币: <span class="gold"></span></p>
+        <p class="game-option game-candowngrade">
+          <span>自动射击<i>免费</i></span>
+          <span>开</span>
+          <span class="game-option-sel">关</span>
+        </p>
+        <p class="game-option">
+          <span>子弹速度<i>1金币</i></span>
+          <span>5</span>
+          <span>10</span>
+          <span class="game-option-sel">15</span>
+          <span>20</span>
+          <span>25</span>
+        </p>
+        <p class="game-option">
+          <span>装弹速度<i>1金币</i></span>
+          <span>100</span>
+          <span>90</span>
+          <span>80</span>
+          <span class="game-option-sel">70</span>
+          <span>60</span>
+        </p>
+        <button class="js-back js-b button">返回<span>B</span></button>
+      </section>
+    </div>
+    <div class="game-info game-ui">
+      <span class="title">分数:</span>
+      <span class="score">0</span>
+      <span class="title">金币:</span>
+      <span class="gold">0</span>
+    </div>
+    <div class="game-control">
+      <span class="js-pause js-p">暂停 P</span>
+      <span class="js-silence js-s">静音 S</span>
+    </div>
+    <canvas id="canvas" width="720" height="1280">
+        <!-- 动画画板 -->
+    </canvas>
+  </div>
+  <!-- 主逻辑函数 -->
+  <script src="./mtfSTGMaker/mtfstgmaker.js" ></script>
+  <script src="./js/conf.js" ></script>
+  <script src="./js/index.js" ></script>
+  <script src="./js/app.js" ></script>
+</body>
+</html>
+

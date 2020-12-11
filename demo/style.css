@@ -1,0 +1,198 @@
+body, h1, p { 
+  padding:0; 
+  margin: 0;
+}
+
+canvas {
+  display: block;
+  height: 100%;
+  margin: 0 auto;
+}
+
+body{
+  color: #fff;
+  font-family: Verdana,Arial, sans-serif;
+  font-size: 18px;
+}
+h1{
+	font-size: 30px;
+}
+
+a{
+	color: #fff;
+	text-decoration:none;
+}
+a:hover{
+	text-decoration: underline;
+}
+.button{
+  display: inline-block;
+  font-size: 16px;
+  margin-top: 20px;
+  margin-right: 5px;
+  border: none;
+  padding: 10px;
+  width: 110px;
+  background-color: #185da8;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 5px;
+}
+.js-shop, .js-reset{
+  width: 80px;
+  background-color: #FF9800;
+}
+.js-reset{
+  background-color:#008000;
+}
+.button:hover{
+	background-color: #2488f5;
+	color: #fff;
+	text-decoration: none;
+}
+.button span{
+  margin-left: 5px;
+}
+#game{
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  background: linear-gradient(-180deg, #040024 0%, #07165C 97%);
+}
+
+.game-panel {
+  position: absolute;/* 将UI置于画布之上 */
+	width: 350px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.game-ui{
+  display: none;
+  box-sizing: border-box;
+	height: 100%;
+}
+.game-level, .game-score, .game-gold {
+  margin-top: 10px;
+  font-size: 18px;
+}
+.game-desc {
+  font-size: 14px;
+  margin-top: 10px;
+  margin-right: 150px;
+}
+.game-preload {
+  margin-top: 20px;
+  font-size: 14px;
+  text-align: center;
+  color: #eee;
+}
+.game-option {
+  margin-bottom: 10px;
+  display: flex;
+  line-height: 40px;
+}
+.game-option span:first-child {
+  flex-basis: 130px;
+  font-weight: bolder;
+}
+.game-option span:first-child i {
+  margin-left: 5px;
+  font-size: 14px;
+  font-style: normal;
+  line-height: 16px;
+  color:#FF9800;
+}
+.game-option .game-option-sel {
+  font-weight: bolder;
+  background-color: #fff;
+  color: #050633;
+  opacity: .8 !important;
+  cursor: default !important;
+}
+.game-option span:first-child ~ span {
+  flex: 1;
+  border: 1px solid #fff;
+  text-align: center;
+  cursor: default;
+}
+.game-option-isupgrade span:first-child ~ span {
+  opacity: .3;
+}
+.game-option-default span:first-child ~ span,
+.game-option-isupgrade span.game-option-sel + span {
+  opacity: 1;
+  cursor: pointer;
+}
+.game-option-default span:first-child ~ span:hover,
+.game-option-isupgrade span.game-option-sel + span:hover {
+  background-color: #fff;
+  color: #185da8;
+  opacity: .8;
+}
+.game-option-default .game-option-sel:hover {
+  color: #050633 !important;
+}
+.game-gold-lack {
+  animation: lack 3s linear;
+}
+.game-control{
+  position: absolute;
+  top: 10px;
+  right: 15px;
+}
+.game-control span{
+  padding: 2px 5px;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  opacity: .8;
+}
+.game-control span:hover{
+  opacity: .9;
+}
+.game-control .active{
+  border: 1px solid #fff;
+  border-radius: 5px;
+}
+.game-info span{
+  font-size: 14px;
+  color: #ccc;
+  user-select: none;
+}
+.game-info .score {
+  color: #fff;
+} 
+.game-info .gold {
+  color: #ff0;
+}
+[data-status="start"] .game-intro {
+  display: block;
+  background: url(./img/bg.png) no-repeat right 20px;
+  background-size: 140px;
+}
+[data-status="pause"] .game-pause, 
+[data-status="failed"] .game-failed, 
+[data-status="success"] .game-success,
+[data-status="all-success"] .game-all-success {
+  display: block;
+  background: url(./img/bg-end.png) no-repeat right 10px;
+  background-size: 150px;
+}
+[data-status="playing"] .game-info {
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding-top: 10px;
+  padding-left: 15px;
+}
+[data-status="shop"] .game-shop {
+  display: block;
+  user-select: none;
+}
+@keyframes lack {
+  0% {color: red;}
+  50% {color: blue}
+  100% {color: yellow;}
+}
