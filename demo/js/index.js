@@ -175,6 +175,7 @@ var Index = (function (canvas, CONF) {
         }
         /** 创建角色：敌人 */
         var gap = CONF.enemySize + CONF.enemyGap // 敌人行高（敌人高度 + 敌人间距）
+        console.log(CONF.level)
         for (var i = 0; i < CONF.level; i++) {
             for (var j = 0, levelGap = gap * i; j < CONF.numPerLine; j++) {
                 enemies.push(new Enemy({

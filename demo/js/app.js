@@ -163,6 +163,7 @@ var GAME = {
     container.setAttribute('data-status', status);
   },
   play: function() {
+    CONF.level = this.data.level; // 同步 等级 到配置
     this.setStatus('playing');
     this.run();
   },
