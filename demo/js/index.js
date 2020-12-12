@@ -210,23 +210,19 @@ var Index = (function (canvas, CONF) {
             context.clearRect(0, 0, canvas.width, canvas.height)
             // 回调函数
             if (CONF.cb.draw(we, enemies) === false) return false
-            // 碰撞检测：子弹和敌人
+            // 射出子弹列表
+            var bullets = []
             we.forEach(function(plane){
-                Utils.collision({
-                    camps: [plane.bullets, enemies],
-                    cb: function(a) {
-                        for(var i = 0; i < a.length; i++) {
-                            a[i][0].status = -1
-                            a[i][1].status = 1
-                            CONF.cb.collision(a[i][0], a[i][1])
-                        }
-                    }
-                })
-                for (var i = plane.bullets.length; i--;) {
-                    if (plane.bullets[i].status === -1) {
-                        plane.bullets.splice(i, 1)
-                    } else {
-                        plane.bullets[i].draw()
+                bullets = bullets.concat(plane.bullets)
+            })
+            // 碰撞检测：子弹和敌人
+            Utils.collision({
+                camps: [bullets, enemies],
+                cb: function(a) {
+                    for(var i = 0; i < a.length; i++) {
+                        a[i][0].status = -1
+                        a[i][1].status = 1
+                        CONF.cb.collision(a[i][0], a[i][1])
                     }
                 }
             })
@@ -291,6 +287,14 @@ var Index = (function (canvas, CONF) {
                         }
                     }
                     enemies[i].draw()
+                }
+            }
+            // 绘制和回收：子弹
+            for (var i = bullets.length; i--;) {
+                if (bullets[i].status === -1) {
+                    bullets.splice(i, 1)
+                } else {
+                    bullets[i].draw()
                 }
             }
         })

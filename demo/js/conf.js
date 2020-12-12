@@ -60,7 +60,7 @@ var CONF = {
             {
                 keyStr: 'planeBulletNum',
                 name: '机枪数量',
-                value: [1, 2, 3],
+                value: [1, 2, 3, 4, 5],
                 isUpgrade: true,
                 gold: 1
             },
@@ -81,7 +81,7 @@ var CONF = {
             {
                 keyStr: 'planeNum',
                 name: '飞机数量',
-                value: [1, 2, 3],
+                value: [1, 2, 3, 4, 5],
                 isUpgrade: true,
                 gold: 1
             }
