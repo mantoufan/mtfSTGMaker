@@ -1,9 +1,9 @@
 var CONF = {
     status: 'start', // 游戏开始默认为开始中
-    level: 6, // 游戏默认等级
+    level: 1, // 游戏默认等级
     score: 0, // 游戏默认分数
     gold: 0, // 游戏默认金币
-    totalLevel: 6, // 总共2关
+    totalLevel: 10, // 总共10关
     numPerLine: 4, // 游戏默认每行多少个怪兽
     canvasPadding: 30, // 默认画布的内边距
     bulletSize: 10, // 默认子弹长度

@@ -166,6 +166,14 @@ a:hover{
 .game-info .gold {
   color: #ff0;
 }
+.game-loader-dot {
+  display: inline-block;
+  width: 15px;
+  height: 13px;
+  margin-left: 5px;
+  animation: dot 1s linear infinite;
+  overflow: hidden;
+}
 [data-status="start"] .game-intro {
   display: block;
   background: url(./img/bg.png) no-repeat right 20px;
@@ -195,4 +203,8 @@ a:hover{
   0% {color: red;}
   50% {color: blue}
   100% {color: yellow;}
+}
+@keyframes dot {
+  0% {text-indent: -10px;}
+  100% {text-indent: 0;}
 }

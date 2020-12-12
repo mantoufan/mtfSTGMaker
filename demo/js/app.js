@@ -38,7 +38,7 @@ var GAME = {
   },
   preload: function(progress) {
     var preload = document.querySelector('.game-preload')
-        preload.innerHTML = progress < 100 ? '资源预加载中 ' + progress + '% 您可以开始游戏' : '预加载完成 开始游戏吧' 
+        preload.innerHTML = progress < 100 ? '资源预加载中<span class="game-loader-dot">···</span> ' + progress + '% 您可以开始游戏' : '预加载完成 开始游戏吧' 
   },
   _Index(CONF) {
     var self = this;
