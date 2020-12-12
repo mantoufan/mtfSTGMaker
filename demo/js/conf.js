@@ -31,7 +31,7 @@ var CONF = {
         down: 'ArrowDown',
         left: 'ArrowLeft',
         shoot: 'Space',
-        autoShoot: false, // 自动射击（移动端自动打开）
+        autoShoot: false, // 自动射击（触屏设备默认开启，可在商店关闭）
     },
     shop: {// 商店
         autoSave: true, // 自动保存商店设置（刷新页面依然有效）

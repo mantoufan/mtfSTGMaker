@@ -14,8 +14,8 @@ var GAME = {
     this.data = {
       shopFromStatus: 'start' // 从商店返回的状态
     }
-    if (/mobile/i.test(navigator.userAgent)) {
-      CONF.control.autoShoot = true // 移动端默认开启自动射击，用户可在商店中关闭
+    if ('ontouchstart' in window) {
+      CONF.control.autoShoot = true // 触屏设备默认开启自动射击，用户可在商店中关闭
     }
     var Index = this._Index(CONF); // 载入业务逻辑
     delete this.Index;
