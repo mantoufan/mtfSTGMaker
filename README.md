@@ -6,9 +6,9 @@ MTF射击游戏生成器，封装角色、装备、碰撞检测、资源预加�
 <canvas id="canvas"></canvas>
 <script src="https://cdn.dm126.com/all/m/mtf/mtfSTGMaker/dist/1.0.0/mtfstgmaker.js" ></script>
 ```
-2. 创建对象，传入画布上下文
+2. 创建对象，传入画布
 ```javascript
-var mtf = mtfSTGMaker(canvas.getContext('2d'))
+var mtf = mtfSTGMaker(canvas)
 ```
 3. 现在您可以通过`mtf`使用生成器
 ## 使用
@@ -115,9 +115,8 @@ var mtf = mtfSTGMaker(canvas.getContext('2d'))
 
 ## 示例
 ```javascript
-var context = canvas.getContext('2d'), // 绘图上下文
-    /** 引入：开始 */
-    mtf = mtfSTGMaker(context),
+/** 引入：开始 */
+var mtf = mtfSTGMaker(canvas),
     MovableObject = mtf.Proto.MovableObject, // 可移动对象原型
     ShootingObject = mtf.Proto.ShootingObject, // 可射击对象原型
     Utils = mtf.Utils, // 引入 工具包

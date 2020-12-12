@@ -7,7 +7,10 @@
  * 
  * Date: 2020-12-10T18:02Z
  */
-var mtfSTGMaker = function(context) {
+var mtfSTGMaker = function(canvas) {
+    var isPause = false, // 是否暂停
+        isSilence = false, // 是否静音
+        context = canvas.getContext('2d')
     /**
      * 通用方法实例
      */
@@ -494,9 +497,6 @@ var mtfSTGMaker = function(context) {
             window.setTimeout(f, 1000 / 60)
         })(Draw.bind(null, cb))
     }
-
-    var isPause = false, // 是否暂停
-        isSilence = false // 是否静音
         
     return {
         Proto: {

@@ -9,7 +9,7 @@ var Index = (function (canvas, CONF) {
         bgAudio = new Audio(), // 背景音乐
         defaultConf = JSON.parse(JSON.stringify(CONF)), // 默认配置
         /** 从框架导入：开始 */
-        mtf = mtfSTGMaker(context),
+        mtf = mtfSTGMaker(canvas),
         MovableObject = mtf.Proto.MovableObject, // 引入 可移动对象原型
         ShootingObject = mtf.Proto.ShootingObject, // 引入 可射击对象原型
         Utils = mtf.Utils, // 引入 工具包
@@ -207,7 +207,7 @@ var Index = (function (canvas, CONF) {
             })
             FrameQueue.length = 0
             // 清空画布
-            context.clearRect(CONF.canvasPadding, CONF.canvasPadding, canvas.width - CONF.canvasPadding, canvas.height - CONF.canvasPadding)
+            context.clearRect(0, 0, canvas.width, canvas.height)
             // 回调函数
             if (CONF.cb.draw(we, enemies) === false) return false
             // 碰撞检测：子弹和敌人
