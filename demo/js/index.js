@@ -136,8 +136,9 @@ var Index = (function (canvas, CONF) {
     }
     /**
      * 业务运行
+     * @param {Integer} level 等级
      */
-    var run = function () {
+    var run = function (level) {
         /** 初始化配置 */
         init();
         var we = [], // 我方成员列表
@@ -175,8 +176,7 @@ var Index = (function (canvas, CONF) {
         }
         /** 创建角色：敌人 */
         var gap = CONF.enemySize + CONF.enemyGap // 敌人行高（敌人高度 + 敌人间距）
-        console.log(CONF.level)
-        for (var i = 0; i < CONF.level; i++) {
+        for (var i = 0; i < level; i++) {
             for (var j = 0, levelGap = gap * i; j < CONF.numPerLine; j++) {
                 enemies.push(new Enemy({
                     x: CONF.canvasPadding + gap * j,

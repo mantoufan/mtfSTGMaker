@@ -12,9 +12,6 @@ var GAME = {
    */
   init: function(CONF) {
     this.data = {
-      level: CONF.level, // 等级
-      score: CONF.score, // 积分
-      gold: CONF.gold, // 金币
       shopFromStatus: 'start' // 从商店返回的状态
     }
     if (/mobile/i.test(navigator.userAgent)) {
@@ -31,7 +28,7 @@ var GAME = {
     this.shop = this._shop();
     delete this._shop;
     this.bindEvent(); // 绑定事件
-    this.updateData(); // 更新数据
+    this.initData(); // 初始化数据到 之前进度 或 默认值
     if (CONF.shop.autoSave) this.shop.load(); // 读取配置（刷新页面后）
     Index.preload(this.preload); // 预加载
     this.setStatus(CONF.status); // 初始等级
@@ -75,10 +72,10 @@ var GAME = {
       }
     }))
   },
-  updateData() {
-    this.updateLevel(this.Storage.get('level') || this.data.level);// 更新级别
-    this.updateScore(this.Storage.get('score') || this.data.score);// 更新分数
-    this.updateGold(this.Storage.get('gold') || this.data.gold);// 更新金币
+  initData() {
+    this.updateLevel(this.Storage.get('level') || CONF.level);// 更新级别
+    this.updateScore(this.Storage.get('score') || CONF.score);// 更新分数
+    this.updateGold(this.Storage.get('gold') || CONF.gold);// 更新金币
   },
   bindEvent: function() {
     var self = this,
@@ -163,9 +160,8 @@ var GAME = {
     container.setAttribute('data-status', status);
   },
   play: function() {
-    CONF.level = this.data.level; // 同步 等级 到配置
     this.setStatus('playing');
-    this.run();
+    this.run(this.data.level);
   },
   save: function() { // 保存游戏进度：将当前data存入记忆实例
     for (var key in this.data) {
@@ -194,7 +190,7 @@ var GAME = {
       this.Storage.clear()
       this.reload();
       this.setStatus('start');
-      this.updateData();
+      this.initData();
     }
   },
   _shop: function() {
