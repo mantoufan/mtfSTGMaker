@@ -52,15 +52,15 @@ var CONF = {
             },
             {
                 keyStr: 'bulletCoolownTime',
-                name: '装弹速度',
-                value: [100, 90, 80, 70, 60],
+                name: '装弹时间',
+                value: [100, 95, 90, 85, 80],
                 isUpgrade: true,
                 gold: 1
             },
             {
                 keyStr: 'planeBulletNum',
                 name: '机枪数量',
-                value: [1, 2, 3, 4, 5],
+                value: [1, 2, 3],
                 isUpgrade: true,
                 gold: 1
             },
@@ -81,7 +81,7 @@ var CONF = {
             {
                 keyStr: 'planeNum',
                 name: '飞机数量',
-                value: [1, 2, 3, 4, 5],
+                value: [1, 2, 3],
                 isUpgrade: true,
                 gold: 1
             }
