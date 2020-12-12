@@ -313,9 +313,14 @@ var mtfSTGMaker = function(canvas) {
             opt.control.down = opt.control.down || 'ArrowDown'
             opt.control.left = opt.control.left || 'ArrowLeft'
             opt.control.shoot = opt.control.shoot || 'Space'
-        function processKey (e, eventName) {
-            var b = eventName === 'keydown'
-            switch(e.code) {
+        /**
+         * 响应键盘按下和抬起事件，标记 方向键 射击键 是否按下状态
+         * @param {Event} event 事件对象
+         */
+        function processKey (event) {
+            event = event || Object.create(null)
+            var b = event.type === 'keydown'
+            switch(event.code) {
                 case opt.control.up:
                     up = b
                 break;
@@ -333,10 +338,15 @@ var mtfSTGMaker = function(canvas) {
                 break;
             }
         }
-        function touch(e, eventName) {
+        /**
+         * 响应触屏拖动事件
+         * @param {*} event 事件对象
+         */
+        function touch(event) {
+            event = event || Object.create(null)
             up = false, right = false, down = false, left = false
-            if(eventName === 'touchend') return prevClientX = prevClientY = void 0
-            var t = e.changedTouches[0]
+            if(event.type === 'touchend') return prevClientX = prevClientY = void 0
+            var t = event.changedTouches[0]
             if (prevClientX && prevClientY) {
             var dx = t.clientX - prevClientX, dy = t.clientY - prevClientY
                 dx > 0 ? right = true : dx < 0 && (left = true)
@@ -345,6 +355,14 @@ var mtfSTGMaker = function(canvas) {
             prevClientX = t.clientX
             prevClientY = t.clientY
         }
+        /**
+         * 虚拟键盘：绘制箭头
+         * @param {Integer}} fromX 箭头开始X坐标
+         * @param {Integer} fromY 箭头开始Y坐标
+         * @param {Integer} toX 箭头结束X坐标
+         * @param {Integer} toY 箭头结束Y坐标
+         * @param {String} color 箭头颜色
+         */
         function arrow (fromX, fromY, toX, toY, color) {
             if (fromY === toY && fromX === toX) return
             var arrowLen = 10, arrowAngle = 45, a2r = Math.PI / 180,
@@ -363,20 +381,21 @@ var mtfSTGMaker = function(canvas) {
                 context.lineTo(toX + botX, toY + botY)
                 context.strokeStyle = color
                 context.stroke()
-        } 
+        }
+        /** 监听 按键 和 触屏 */
         document.addEventListener('keydown', function(e){processKey(e, 'keydown')})
         document.addEventListener('keyup', function(e){processKey(e, 'keyup')})
         document.addEventListener('touchmove', function(e){touch(e, 'touchmove')})
         document.addEventListener('touchend', function(e){touch(e, 'touchend')})
         return {
-            draw: function() {
+            draw: function() {// 触屏：绘制虚拟键盘
                 if (!prevClientX || !prevClientY) return
-                var d = 30, offsetX = left ? -d : right ? d : 0, offsetY = up ? -d : down ? d : 0
+                var d = 50, offsetX = left ? -d : right ? d : 0, offsetY = up ? -d : down ? d : 0
                 if (!(Utils.xIsOver(prevClientX + offsetX, 0, opt.padding) || Utils.yIsOver(prevClientY + offsetY, 0, opt.padding))) {
-                    arrow(prevClientX + (offsetX >> 1), prevClientY + (offsetY >> 1), prevClientX + offsetX, prevClientY + offsetY, '#fff')
+                    arrow(prevClientX + (offsetX / 3 * 2 | 0), prevClientY + (offsetY / 3 * 2 | 0), prevClientX + offsetX, prevClientY + offsetY, '#fff')
                 }
             },
-            pressed: function() {
+            pressed: function() { // 按键：返回当前 方向键 射击键 按下状态
                 return {
                     up: up,
                     right: right,
