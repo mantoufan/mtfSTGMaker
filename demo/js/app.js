@@ -43,9 +43,12 @@ var GAME = {
       cb: {
         draw: function(we, enemies) { // 渲染时，传入不同阵营的实例列表
           if (enemies.length === 0) {// 胜利：敌人无人
-            if (self.data.level <= CONF.totalLevel) {
+            if (self.data.level < CONF.totalLevel) {
               self.updateLevel(self.data.level + 1);
               self.setStatus('success');
+            } else {
+              self.updateLevel(1);
+              self.setStatus('all-success');
             }
             return false;
           } else if (we.length === 0 || enemies[enemies.length - 1].y > canvas.height - CONF.canvasPadding) {// 失败：我方无人 或 有敌人到达底部
