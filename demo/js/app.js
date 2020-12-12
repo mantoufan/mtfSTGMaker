@@ -42,15 +42,15 @@ var GAME = {
     return Index(canvas, Object.assign(CONF, {
       cb: {
         draw: function(we, enemies) { // 渲染时，传入不同阵营的实例列表
-          if (we.length === 0 || enemies[enemies.length - 1].y > canvas.height - CONF.canvasPadding) {// 失败：我方无人 或 有敌人到达底部
-            self.setStatus('failed');
-            return false; // 终止渲染
-          } else if (enemies.length === 0) {// 胜利：敌人无人
+          if (enemies.length === 0) {// 胜利：敌人无人
             if (self.data.level <= CONF.totalLevel) {
               self.updateLevel(self.data.level + 1);
               self.setStatus('success');
             }
             return false;
+          } else if (we.length === 0 || enemies[enemies.length - 1].y > canvas.height - CONF.canvasPadding) {// 失败：我方无人 或 有敌人到达底部
+            self.setStatus('failed');
+            return false; // 终止渲染
           }
         },
         collision: function(a, b) { // 碰撞时，传入相撞的2个阵营的实例，顺序与index.js碰撞检测顺序一致

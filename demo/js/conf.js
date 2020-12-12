@@ -9,7 +9,7 @@ var CONF = {
     bulletSize: 10, // 默认子弹长度
     bulletSpeed: 10, // 默认子弹的移动速度
     bulletCoolownTime: 100, // 默认子弹的冷却时间（秒）
-    enemySpeed: 20, // 默认敌人移动距离
+    enemySpeed: 5, // 默认敌人移动距离
     enemySize: 50, // 默认敌人的尺寸
     enemyGap: 10,  // 默认敌人之间的间距
     enemyIcon: './img/enemy.png', // 怪兽的图像
