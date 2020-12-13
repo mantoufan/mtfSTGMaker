@@ -243,10 +243,14 @@ var mtfSTGMaker = function(canvas) {
             }) 
         }
         if (!isSilence && this.constructor.shootAudioSrc) {
-            var audio = new Audio(this.constructor.shootAudioSrc)
-            audio.play()
+            shootAudioPlay(this.constructor.shootAudioSrc)
         }
     }
+    /** 防抖处理的shootAudioPlay：防止短时大量射击爆音并提高性能 */
+    var shootAudioPlay = Utils.throttle(function(audioSrc) {
+        var audio = new Audio(audioSrc)
+        audio.play()
+    }, 36)
     
     /**
      * 资源加载实例
@@ -411,32 +415,71 @@ var mtfSTGMaker = function(canvas) {
      */
     var Storage = (function () {
         var uuid = 'mtfSTGMakerStorage'
-        function _keyStrValue(map, keyStr, value) {
+        function _keyStrValue(hash, keyStr, val) {
+            var args = arguments
             return keyStr.split('.').reduce(function(p, key, i, a) {
                 if (p[key] === void 0) a.length = 0
-                if (i === a.length - 1 && value !== -Infinity) {
-                    p[key] = value
+                if (i === a.length - 1 && args.length === 3) {
+                    p[key] = val
                 }
                 return p[key]
-            }, map)
+            }, hash)
         }
-        function setKeyStrValue(map, keyStr, value) {
-            return _keyStrValue(map, keyStr, value)
+        /**
+         * 根据键名字符串设置值
+         * @param {Objecct} obj 要操作的哈希表 
+         * @param {String} keyStr 要配置的键名字符串，包含关系用英文半角逗号相隔，如{a:{b:{c:1}}}写成'a.b.c'
+         * @param {Any} val 要设置的值，任意类型，包括undefined
+         * @return {Any} val 返回值本身
+         */
+        function setKeyStrValue(hash, keyStr, val) {
+            return _keyStrValue(hash, keyStr, val)
         }
-        function getKeyStrValue(map, keyStr) {
-            return _keyStrValue(map, keyStr, -Infinity)
+        /**
+         * 根据键名字符串读取值
+         * @param {Objecct} obj 要操作的哈希表 
+         * @param {*} keyStr 要读取的键名字符串，包含关系用英文半角逗号相隔，如{a:{b:{c:1}}}写成'a.b.c'
+         * @return {Any} val 返回值本身
+         */
+        function getKeyStrValue(hash, keyStr) {
+            return _keyStrValue(hash, keyStr)
         }
+        /**
+         * 保存
+         * @param {String} key 键名 
+         * @param {Any} val 要设置的值，任意类型，包括undefined
+         * @return {Any} val 返回值本身
+         */
         function set(key, val) {
             var mtfSTGMakerStorage = localStorage.getItem(uuid)
             mtfSTGMakerStorage = JSON.parse(mtfSTGMakerStorage) || Object.create(null)
             mtfSTGMakerStorage[key] = val
             return localStorage.setItem(uuid, JSON.stringify(mtfSTGMakerStorage)), val
         }
+        /**
+         * 保存
+         * @param {String} key 键名 
+         * @return {Any} val 返回值本身
+         */
         function get(key) {
             var mtfSTGMakerStorage = localStorage.getItem(uuid)
             mtfSTGMakerStorage = JSON.parse(mtfSTGMakerStorage) || Object.create(null)
             return key ? mtfSTGMakerStorage[key] : mtfSTGMakerStorage
         }
+        /**
+         * 移除
+         * @param {String} key 键名 
+         * @return {Boolean} res 与delete对象键名返回值相同：除属性本身不可配置，其余均为true
+         */
+        function remove(key) {
+            var mtfSTGMakerStorage = localStorage.getItem(uuid), res = false
+            mtfSTGMakerStorage = JSON.parse(mtfSTGMakerStorage) || Object.create(null)
+            res = delete mtfSTGMakerStorage[key]
+            return localStorage.setItem(uuid, JSON.stringify(mtfSTGMakerStorage)), res
+        }
+        /**
+         * 清空
+         */
         function clear() {
             return localStorage.removeItem(uuid)
         }
@@ -445,6 +488,7 @@ var mtfSTGMaker = function(canvas) {
             getKeyStrValue: getKeyStrValue,
             set: set,
             get: get,
+            remove: remove,
             clear: clear
         }
     })()

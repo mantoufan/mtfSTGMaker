@@ -28,10 +28,12 @@ var GAME = {
     this.shop = this._shop();
     delete this._shop;
     this.bindEvent(); // 绑定事件
-    this.initData(); // 初始化数据到 之前进度 或 默认值
-    if (CONF.shop.autoSave) this.shop.load(); // 读取配置（刷新页面后）
+    this.initData(); // 初始化数据到 之前保存的进度 或 默认值
+    if (CONF.shop.autoSave) this.shop.load(); // 读取进度（刷新页面后）
     Index.preload(this.preload); // 预加载
+    Index.initbgAudio();// 背景音乐
     this.setStatus(CONF.status); // 初始等级
+    if (this.Storage.get('isSilence') === false) this.Storage.remove('isSilence') // 根据浏览器规范，初始必须静音，如果用户手动设置过不静音，则清除设置
   },
   preload: function(progress) {
     var preload = document.querySelector('.game-preload')
@@ -69,6 +71,7 @@ var GAME = {
         silence: function(isSilence) { // 静音状态变化时回调
           var silenceBtn = document.querySelector('.js-silence');
           isSilence ? silenceBtn.classList.add('active') : silenceBtn.classList.remove('active')
+          self.Storage.set('isSilence', isSilence) // 记录用户手动操作静音
         },
       }
     }))
@@ -156,6 +159,7 @@ var GAME = {
       this.data.shopFromStatus = this.status;
     } else if (status === 'success' || status === 'all-success') {
       this.save();
+      container.style.filter = 'hue-rotate(' + (((this.data.level - 1) / CONF.totalLevel) * 360 | 0) + 'deg)'
     }
     this.status = status;
     container.setAttribute('data-status', status);
@@ -163,6 +167,9 @@ var GAME = {
   play: function() {
     this.setStatus('playing');
     this.run(this.data.level);
+    if (this.Storage.get('isSilence') === void 0) {// 如果用户没有手动静音，自动打开声音
+      this.silence();
+    }
   },
   save: function() { // 保存游戏进度：将当前data存入记忆实例
     for (var key in this.data) {
@@ -187,7 +194,7 @@ var GAME = {
     return document.createElement(tag);
   },
   reset: function() {
-    if (confirm('是否重置游戏关卡、金币、商店到默认值？')) {
+    if (confirm('是否重置游戏关卡、金币、商店、静音配置到默认值？')) {
       this.Storage.clear()
       this.reload();
       this.setStatus('start');

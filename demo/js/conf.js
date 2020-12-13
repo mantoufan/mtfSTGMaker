@@ -5,7 +5,7 @@ var CONF = {
     gold: 0, // 游戏默认金币
     totalLevel: 10, // 总共10关
     numPerLine: 4, // 游戏默认每行多少个怪兽
-    canvasPadding: 10, // 默认画布的内边距
+    canvasPadding: 30, // 默认画布的内边距
     bulletSize: 10, // 默认子弹长度
     bulletSpeed: 10, // 默认子弹的移动速度
     bulletCoolownTime: 100, // 默认子弹的冷却时间（秒）

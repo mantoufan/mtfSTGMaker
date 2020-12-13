@@ -126,9 +126,7 @@ a:hover{
 }
 .game-option-default span:first-child ~ span:hover,
 .game-option-isupgrade span.game-option-sel + span:hover {
-  background-color: #fff;
-  color: #185da8;
-  opacity: .8;
+  animation: span-hover 2s linear;
 }
 .game-option-default .game-option-sel:hover {
   color: #050633 !important;
@@ -207,4 +205,11 @@ a:hover{
 @keyframes dot {
   0% {text-indent: -10px;}
   100% {text-indent: 0;}
+}
+@keyframes span-hover {
+  30%, 60% {
+    background-color: #fff;
+    color: #185da8;
+    opacity: 1;
+  }
 }
