@@ -134,9 +134,11 @@ var Index = (function (canvas, CONF) {
             bgAudio.onended = function() { // 兼容不支持loop的移动端
                 bgAudio.play()
             }
-            if (Utils.state().isSilence === true && Storage.get('isSilence') === void 0) {// 非用户主动静音时，触发音乐播放
-                CONF.cb.silence(Utils.silence())
-                bgAudio.play()
+            if (Utils.state().isSilence === true && Storage.get('isSilence') === void 0) {// 非用户主动静音时，提示是否开始声音
+                if (confirm('是否开启声音？')) {
+                    CONF.cb.silence(Utils.silence())
+                    bgAudio.play()
+                }
             }
             bgAudio.inited = true
         }
