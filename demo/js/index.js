@@ -127,6 +127,19 @@ var Index = (function (canvas, CONF) {
      */
     var init = function () {
         Enemy.enemyDirection = CONF.enemyDirection // 静态属性：敌人移动方向
+        /** 初始化背景音乐 */
+        if (bgAudio.inited === void 0) {
+            bgAudio.src = bgAudio.src || CONF.bgAudio
+            bgAudio.loop = true
+            bgAudio.onended = function() { // 兼容不支持loop的移动端
+                bgAudio.play()
+            }
+            if (Utils.state().isSilence === true && Storage.get('isSilence') === void 0) {// 非用户主动静音时，触发音乐播放
+                CONF.cb.silence(Utils.silence())
+                bgAudio.play()
+            }
+            bgAudio.inited = true
+        }
     }
     /**
      * 业务运行
@@ -299,15 +312,6 @@ var Index = (function (canvas, CONF) {
         preload: function(cb) { // 预加载
             Loader.load(CONF, cb)
         },
-        initbgAudio: function() {// 初始化背景音乐
-            bgAudio.src = CONF.bgAudio
-            bgAudio.loop = true
-            bgAudio.onended = function() { // 兼容不支持loop的移动端
-                bgAudio.play()
-            }
-            bgAudio.muted = true
-            Utils.silence()
-        },
         reload: function() { // 重载配置（重置）
             Object.assign(CONF, defaultConf, {cb: CONF.cb});
         },
@@ -325,12 +329,15 @@ var Index = (function (canvas, CONF) {
         silence: function () { // 静音
             var isSilence = Utils.silence()
             if (isSilence === false) {
-                if (bgAudio.currentTime  === 0) {
-                    bgAudio.play()
-                }
+                Storage.remove('isSilence')
+            } else {
+                Storage.set('isSilence', true) // 记录用户手动操作静音
             }
             bgAudio.muted = isSilence
             CONF.cb.silence(isSilence)
+        },
+        setBgAudioSrc: function(src) { // 切换背景音乐
+            bgAudio.src = src
         },
         Storage: Storage // 记忆实例：用于保存读取进度
     }

@@ -31,9 +31,7 @@ var GAME = {
     this.initData(); // 初始化数据到 之前保存的进度 或 默认值
     if (CONF.shop.autoSave) this.shop.load(); // 读取进度（刷新页面后）
     Index.preload(this.preload); // 预加载
-    Index.initbgAudio();// 背景音乐
     this.setStatus(CONF.status); // 初始等级
-    if (this.Storage.get('isSilence') === false) this.Storage.remove('isSilence') // 根据浏览器规范，初始必须静音，如果用户手动设置过不静音，则清除设置
   },
   preload: function(progress) {
     var preload = document.querySelector('.game-preload')
@@ -71,7 +69,6 @@ var GAME = {
         silence: function(isSilence) { // 静音状态变化时回调
           var silenceBtn = document.querySelector('.js-silence');
           isSilence ? silenceBtn.classList.add('active') : silenceBtn.classList.remove('active')
-          self.Storage.set('isSilence', isSilence) // 记录用户手动操作静音
         },
       }
     }))
@@ -131,7 +128,7 @@ var GAME = {
       if (['KeyP', 'KeyS'].indexOf(e.code) > -1) {
         selector = '.game-control';
       } else if (self.status !== 'playing' && ['KeyA', 'KeyB', 'KeyR'].indexOf(e.code) > -1) {
-        selector = '.game-' + (status === 'start' ? 'intro' : container.getAttribute('data-status'));
+        selector = '.game-' + (self.status === 'start' ? 'intro' : container.getAttribute('data-status'));
       }
       if (selector) {
         document.querySelector(selector + ' .js-' + e.code.slice(-1).toLowerCase()).click();
@@ -160,6 +157,9 @@ var GAME = {
     } else if (status === 'success' || status === 'all-success') {
       this.save();
       container.style.filter = 'hue-rotate(' + (((this.data.level - 1) / CONF.totalLevel) * 360 | 0) + 'deg)'
+      if (status === 'all-success') {
+
+      }
     }
     this.status = status;
     container.setAttribute('data-status', status);
@@ -167,9 +167,6 @@ var GAME = {
   play: function() {
     this.setStatus('playing');
     this.run(this.data.level);
-    if (this.Storage.get('isSilence') === void 0) {// 如果用户没有手动静音，自动打开声音
-      this.silence();
-    }
   },
   save: function() { // 保存游戏进度：将当前data存入记忆实例
     for (var key in this.data) {
