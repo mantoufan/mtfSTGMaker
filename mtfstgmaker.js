@@ -9,7 +9,7 @@
  */
 var mtfSTGMaker = function(canvas) {
     var isPause = false, // 是否暂停
-        isSilence = false, // 是否静音
+        isSilence = true, // 是否静音，据Chrome 66版本建议，默认 静音，必须由用户手动触发音乐播放
         context = canvas.getContext('2d')
     /**
      * 通用方法实例
@@ -144,6 +144,16 @@ var mtfSTGMaker = function(canvas) {
         silence: function() {
             return isSilence = !isSilence
         },
+        /**
+         * 状态
+         * @return {Object} 返回当前静音和暂停状态
+         */
+        state: function() {
+            return {
+                isSilence: isSilence,
+                isPause: isPause
+            }
+        }
     }
 
     /**
