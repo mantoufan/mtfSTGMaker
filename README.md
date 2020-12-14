@@ -64,6 +64,7 @@ var mtf = mtfSTGMaker(canvas)
 - `getKeyStrValue(map, keyStr)` 获取`map`中的key名为`keyStr`的键值
 - `set(key, val)` 设置键为`key`的值为`val`
 - `get(key)` 获取键为`key`的值
+- `remove(key)` 移除键为`key`的值
 - `clear()` 清空记忆实例
 
 ### Shop 商店类
@@ -111,7 +112,8 @@ var mtf = mtfSTGMaker(canvas)
         - 防抖：重复执行将重置延迟时间
     - `isDebounce` 是否开启防抖，默认为节流。`true/false`
 - `pause()` 暂停渲染，返回当前暂停状态`true/false`
-- `silence` 静音，返回当前静音状态`true/false`
+- `silence()` 静音，返回当前静音状态`true/false`
+- `state()` 返回当前渲染暂停`isPause`或静音`isSilence`状态
 
 ## 示例
 ```javascript
